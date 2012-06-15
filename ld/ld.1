@@ -1,0 +1,162 @@
+.\"
+.\" Copyright (c) 2009,2010 Michael Shalayeff
+.\" All rights reserved.
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF MIND, USE, DATA OR PROFITS, WHETHER IN
+.\" AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+.\" OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.Dd $Mdocdate: October 11 2010 $
+.Dt LD 1
+.Os
+.Sh NAME
+.Nm ld
+.Nd link editor
+.Sh SYNOPSIS
+.Nm ld
+.Op Fl iMnNOrsStvVxXZ
+.Op Fl Fl cref
+.Op Fl AcCDeuy Ar name
+.Op Fl o Ar a.out
+.Ar ...
+.Ar file
+.Op Fl l Ar lib
+.Op Fl L Ar path
+.Op Fl R Ar file
+.Ar ...
+.Sh DESCRIPTION
+.Nm
+combines several object files into one program, resolves external
+references, and searches libraries.
+
+.Bl -tag -width _a_file__
+.It Fl A Ar name , Fl architecture Ar name
+Assume all input object files and subsequently the outout file
+format being for the architecture
+.Ar name .
+.It Fl C Ar name , Fl init Ar name
+Add
+.Ar name
+to the constructor list.
+.It Fl c Ar name , Fl fini Ar name
+Add
+.Ar name
+to the destructor list.
+.It Fl D Ar name=addr , Fl defsym Ar name=addr
+Define an absolute symbol
+.Ar name
+with a value
+.Ar addr .
+.It Fl EB
+Generate a big-endian output.
+.It Fl EL
+Generate a little-endian output.
+.It Fl e Ar name , Fl entry Ar name
+Assume symbol 
+.Ar name
+to be the entry point.
+Default entry point name is
+.Dq _start
+on most architectures.
+.It Fl i , r , Fl Fl relocatable
+Produce a relocatable output.
+.Il Fl L Y Ar path , Fl library-path Ar path
+Add
+.Ar path
+to the list of directories to be searched for libraries.
+.It Fl l Ar name , Fl library Ar name
+Search library named
+.Pa lib Ar name .a
+for unresolved named and load correspondent object files in.
+.It Fl M
+Print executable map to the standard output.
+.It Fl n , Fl Fl nmagic
+Prodice an
+.Dv NMAGIC
+output (see
+.Sx OUTPUT
+for more information).
+.It Fl N , Fl Fl omagic
+Prodice an
+.Dv OMAGIC
+output (see
+.Sx OUTPUT
+for more information).
+.It Fl o Ar name , Fl output Ar name
+Set output file name to
+.Ar name
+instead of default
+.Pa a.out .
+.It Fl R Ar name , Fl just-symbols Ar name
+Only load symbols from the ile
+.Ar name .
+.It Fl S , Fl Fl strip-debug
+Do not include debugging information in the output file.
+.It Fl s , Fl Fl strip-all
+Do not include any symbolic information in the output file.
+.It Fl t , Fl Fl trace
+Trace the file sas they are being loaded.
+.It Fl u Ar name , Fl undefined Ar name
+Enter symbol
+.Ar name
+as undefined into the global symbol table.
+.It Fl V v
+Print linker version.
+.It Fl x , Fl Fl discard-all
+Discard all local symbols from the symbol table of the output file.
+.It Fl X , Fl Fl discard-locals
+Discard only compiler's temporary and local symbols.
+.It Fl y Ar name , Fl trace-symbol Ar name
+Trace all files for this symbol.
+.It Fl Z
+Prodice an
+.Dv ZMAGIC
+output (see
+.Sx OUTPUT
+for more information).
+.It Fl Fl cref
+Print a cross-reference table to the standard output.
+.El
+.Sh FILES
+.Bl -tag -width /usr/local/lib/lib___.a -compact
+.It Pa /usr/lib/lib*
+Libraries.
+.It Pa /usr/local/lib/lib*
+More libraries.
+.It Pa a.out
+Output file.
+.El
+.Sh OUTPUT
+The output file is named
+.Pa a.out
+by default and is composed of various number of sections.
+.Sh SEE ALSO
+.Xr ar 1 ,
+.Xr as 1 ,
+.Xr cc 1 ,
+.Xr nm 1 ,
+.Xr ranlib 1 ,
+.Xr a.out 5 ,
+.Xr elf 5
+.Sh HISTORY
+The
+.Nm
+command first appeared in   
+.At v6 .
+.Pp
+This version was written by
+.An Michael Shalayeff Aq mickey@lucifier.net .
+.Sh CAVEATS
+Current
+.Xr ld 1
+version only supports
+.Xr elf 5
+binaries.

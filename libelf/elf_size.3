@@ -1,0 +1,196 @@
+.\"
+.\" Copyright (c) 2010 Michael Shalayeff
+.\" All rights reserved.
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF MIND, USE, DATA OR PROFITS, WHETHER IN
+.\" AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+.\" OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.Dd $Mdocdate: June 15 2012 $
+.Dt ELF 3
+.Os
+.Sh NAME
+.Nm elf
+.Nd ELF munching library
+.Sh SYNOPSIS
+.Fd #include <elfuncs.h>
+.Ft int
+.Fn elf_fix_header "Elf_Ehdr *eh"
+.Ft int
+.Fn elf_chk_header "Elf_Ehdr *eh"
+.Ft int
+.Fn elf_fix_note "Elf_Ehdr *eh" "Elf_Note *en"
+.Ft Elf_Phdr *
+.Fn elf_load_phdrs "const char *name" "FILE *fp" "off_t foff" "Elf_Ehdr *eh"
+.Ft int
+.Fn elf_fix_phdrs "const Elf_Ehdr *eh" "Elf_Phdr *phdr"
+.Ft int
+.Fn elf_save_phdrs "const char *name" "FILE *fp" "off_t foff" "Elf_Ehdr *eh" "const Elf_Shdr *phdr"
+.Ft char *
+.Fn elf_shstrload "const char *name" "FILE *fp" "off_t foff" "const Elf_Ehdr *eh" "const Elf_Shdr *shdr"
+.Ft Elf_Shdr *
+.Fn elf_load_shdrs "const char *name" "FILE *fp" "off_t foff" "Elf_Ehdr *eh"
+.Ft int
+.Fn elf_fix_shdrs "const Elf_Ehdr *eh" "Elf_Shdr *shdr"
+.Ft int
+.Fn elf_save_shdrs "const char *name" "FILE *fp" "off_t foff" "Elf_Ehdr *eh" "const Elf_Shdr *shdr"
+.Ft int
+.Fn elf_symload "struct elf_symtab *es" "FILE *fp" "off_t foff" "int (*func)(struct elf_symtab *es, int is, void *sym, void *arg)" "void *arg"
+.Ft int
+.Fn elf_fix_sym "const Elf_Ehdr *eh" "Elf_Sym *sym"
+.Ft int
+.Fn elf2nlist "Elf_Sym *sym" "const Elf_Ehdr *eh" "const Elf_Shdr *shdr" "const char *shstr" "struct nlist *np"
+.Ft int
+.Fn elf_fix_rel "Elf_Ehdr *eh" "Elf_Rel *rel"
+.Ft int
+.Fn elf_fix_rela "Elf_Ehdr *eh" "Elf_RelA *rela"
+.Ft inr
+.Fn elf_size "const Elf_Ehdr *eh" "const Elf_Shdr *shdr" "u_long *ptext" "u_long *pdata" "u_long *pbss"
+.Sh DESCRIPTION
+The
+.Nm
+library provides several functions for ELF handywork.
+It is assumed for the caller to know the greater plan where the
+.Nm
+library functions only do simple tasks.
+.Pp
+Functions for both 32 and 64 bit ELF formats are provided
+with provisions for byte swapping (thus cross-action).
+For futher simplicity we will ommit the 32/64 post-prefixes
+(following the elf prefix) in function names and ELF structure
+names in the later descriptions.
+.Pp
+.Bl -tag -width elf_dwarfnebula__
+.It elf_fix_header
+Byteswap the members of the ELF header pointed to by the argument
+between the binary and host order.
+This is in particular useful after loading or before storing
+the ELF header.
+.It elf_chk_header
+First byte-swap the header to host order.
+Then check the validity of the object header fields and also 
+check for 32/64 bits classification.
+The
+.Nm e_machine
+field is not checked and left for them users to care.
+.It elf_fix_note
+Byteswp the note section header.
+.It elf_load_phdrs
+Load program headers.
+.It elf_fix_phdrs
+Byteswap program headers.
+.It elf_save_phdrs
+Save program headers.
+.It elf_load_shdrs
+Load section headers.
+.It elf_save_shdrs
+Save section headers.
+.It elf_fix_shdrs
+Byteswap section headers.
+.It elf_shstrload
+Load section headers string table.
+.It elf_fix_sym
+Byteswap symbol entry.
+.It elf_symload
+Loads symbols.
+For every symbol table record a callback
+.Nm func
+is called with a
+.Ar sym
+pointer to the
+.Nm Elf_Sym
+record already in the host byte order.
+Storage for the
+.Nm Elf_Sym
+is reused between calls and if desired user has to copy and store
+the record in its own storage.
+The
+.Ar is
+argument is the relative index of the record in the symbol table.
+The
+.Ar arg
+argument is passed opaque as supplied in
+Struct
+.Nm elf_symtab
+is partially filled by the caller and partially by
+.Nm elf_symload
+function.
+Here are the fields description:
+.Bl -tag -width stabsz__
+.It Ar name Fl caller
+The name of the object file for error reporting and other diagnostic purposes.
+.It Ar ehdr Fl caller
+.Nm Elf_Hdr
+ELF header in host byte order.
+.It Ar shdr Fl optional
+Section headers as an array of
+.Nm Elf_Shdr
+records already in host byte order.
+If NULL it will be allocated and filled up properly.
+.It Ar shstr Fl optional
+Section names array also if NULL be allocated and filled up.
+.It Ar stab Fl function
+Symbol names array provided by the function from a linked
+.Nm SHT_STRTAB
+section content.
+.It Ar stabsz Fl function
+The size of the symbols names array as presented above.
+.It Ar nsyms Fl function
+Total number of symbols calculated based on the symbol table size
+and entry size.
+.El
+.It elf2nlist
+Polymorph ELF symbol table item into
+.Xr nlist 3
+format.
+.It elf_fix_rel
+Byteswap a simple relocation entry.
+.It elf_fix_rela
+Byteswap an addendum relocation entry.
+.It elf_size
+Calculate ELF binary size (currently only used by
+.Xr size 1
+utility).
+.El
+.Sh RETURN VALUES
+All functions returning an
+.Nm int
+return zero on success and an excellent positive number on failure.
+Others returning pointers produce
+.Nm NULL
+on failure and a valid pointer to the requested content (allocated with
+.Xr malloc 3
+or
+.Xr calloc 3 ).
+.Sh DIAGNOSTICS
+All functions produce error messages using
+.Xr warn 3
+or
+.Xr warnx 3
+routines from the standard C library.
+Them messages shall be self-explanatory.
+.Sh SEE ALSO
+.Xr ar 1 ,
+.Xr as 1 ,
+.Xr ld 1 ,
+.Xr nm 1 ,
+.Xr ranlib 1 ,
+.Xr readelf 1 ,
+.Xr a.out 5 ,
+.Xr elf 5
+.Sh HISTORY
+This library was produced by The Master Mind Flayer Bob from the brains
+of Wiz-Gno-Mal-Neu
+.An Michael Shalayeff Aq mickey@lucifier.net .
+.Pp
+-More-
+.Sh CAVEATS
+There is currently no GNOME support.

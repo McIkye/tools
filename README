@@ -1,0 +1,37 @@
+
+Here be a collection of developers tools except for the C compiler
+that one can haz a personal choice upon.
+All tools handle ELF and some do even a.out except for as(1) ld(1)
+and surprisingly readelf(1).
+
+They all depend upon libelf that provides very basic ELF pokery.
+
+Any one of these builds as is on any reasonable BSD system.
+Yer Kleenux milage may vary.
+Here are expected source locations:
+	/usr/src/share/mk
+	/usr/src/lib/libelf
+	/usr/src/bin/adb
+	/usr/src/usr.bin/ar
+	/usr/src/usr.bin/as
+	/usr/src/usr.bin/ld
+	/usr/src/usr.bin/nm
+	/usr/src/usr.bin/readelf
+	/usr/src/usr.bin/strings
+	/usr/src/usr.bin/strip
+Other dependancies include:
+	make(1) awk(1) sh(1) nroff(1) cp(1) ln(1) mkdir(1) libc(2/3)
+
+All proggies function correctly on almost any architecture.
+Any proggie can be compiled and used on any architecture to
+operate on any other architectures source or object files.
+The only machine-dependant pieces are in:
+	ld(1)		for relocs and MD bits
+	as(1)		obviously but see what is supported
+	adb(1)		cannot run alien bins but can mock 'em aliens!
+	readelf(1)	reloc types and MD bits
+
+See them manuals for more of them details.
+
+--
+    paranoic mickey      (my employers have changed but, the name has remained)
