@@ -1,12 +1,14 @@
 
 Here be a collection of developers tools except for the C compiler
-that one can haz a personal choice upon.
+that one can haz a personal choice upon and strictly speaking
+compiler has little to do with binary objects.
 All tools handle ELF and some do even a.out except for as(1) ld(1)
 and surprisingly readelf(1).
 
 They all depend upon libelf that provides very basic ELF pokery.
 
-Any one of these builds as is on any reasonable BSD system.
+Any one of these builds as is on any reasonable BSD system (sample
+make(1) include files are supplied for reference).
 Yer Kleenux milage may vary.
 Here are expected source locations:
 	/usr/src/share/mk
@@ -32,6 +34,8 @@ The only machine-dependant pieces are in:
 	readelf(1)	reloc types and MD bits
 
 See them manuals for more of them details.
+
+as(1) and adb(1) coming soon...
 
 --
     paranoic mickey      (my employers have changed but, the name has remained)
