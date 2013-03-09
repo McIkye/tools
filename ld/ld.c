@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011 Michael Shalayeff
+ * Copyright (c) 2009-2013 Michael Shalayeff
  * All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -62,6 +62,7 @@ int cref;
 int nostdlib;
 int pie;
 int warncomm;
+int randomise = 1;/* combine objects in random order (vs command line) */
 int trace;	/* trace objects being loaded */
 int relocatable;/* produce relocatable output */
 int strip;
@@ -110,6 +111,7 @@ const struct option longopts[] = {
 	{ "library-path",	required_argument,	0, 'L' },
 	{ "print-map",		no_argument,		0, 'M' },
 	{ "Map",		required_argument,	0, 'M' },
+	{ "no-random",		no_argument,	&randomise, 0 },
 	{ "nmagic",		no_argument,	&magic, NMAGIC },
 	{ "omagic",		no_argument,	&magic, OMAGIC },
 	{ "output",		required_argument,	0, 'o' },
@@ -857,7 +859,7 @@ obj_add(const char *path, const char *name, FILE *fp, off_t foff,
 	} else
 		errx(1, "%s: bad format", path);
 
-	if (sol && randombit())
+	if (sol && randomise && randombit())
 		TAILQ_INSERT_AFTER(&objlist, sol, ol, ol_entry);
 	else
 		TAILQ_INSERT_TAIL(&objlist, ol, ol_entry);
