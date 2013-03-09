@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011 Michael Shalayeff
+ * Copyright (c) 2009-2013 Michael Shalayeff
  * All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -171,7 +171,7 @@ extern const struct ldarch *ldarch;
 struct ldorder {
 	enum  {
 		ldo_kaput, ldo_option, ldo_expr, ldo_section, ldo_symbol,
-		ldo_interp, ldo_note, ldo_shstr, ldo_symtab, ldo_strtab
+		ldo_interp, ldo_ehfrh, ldo_shstr, ldo_symtab, ldo_strtab
 	}	ldo_order;
 	const char *ldo_name;	/* name of the section or global */
 	int ldo_type;		/* type of the section or global */
@@ -267,3 +267,4 @@ struct ldorder *order_clone(const struct ldarch *, const struct ldorder *);
 void sym_printmap(struct headorder *, ordprint_t, symprint_t);
 int order_printmap(const struct ldorder *, void *);
 int randombit(void);
+char *__cxa_demangle(const char *, char *, size_t *, int *);

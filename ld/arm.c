@@ -59,7 +59,7 @@ const struct ldorder arm_order[] = {
 	{ ldo_section,	ELF_RODATA, SHT_PROGBITS, SHF_ALLOC,
 			0, DFILL },
 	{ ldo_section,	ELF_GCC_LINK1R, SHT_PROGBITS, SHF_ALLOC, LD_LINK1 },
-	{ ldo_section,	ELF_EH_FRAME_H, SHT_PROGBITS, SHF_ALLOC,
+	{ ldo_ehfrh,	ELF_EH_FRAME_H, SHT_PROGBITS, SHF_ALLOC,
 			LD_CONTAINS | LD_IGNORE },
 	{ ldo_section,	ELF_EH_FRAME, SHT_PROGBITS, SHF_ALLOC, LD_IGNORE },
 	{ ldo_section,	ELF_GCC_EXCEPT, SHT_PROGBITS, SHF_ALLOC, LD_IGNORE },

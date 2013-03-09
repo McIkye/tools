@@ -449,7 +449,7 @@ ldinit(void)
 		/* these we do not care until later */
 		case ldo_section:
 		case ldo_interp:
-		case ldo_note:
+		case ldo_ehfrh:
 		case ldo_shstr:
 		case ldo_symtab:
 		case ldo_strtab:
@@ -946,11 +946,23 @@ ldorder(const struct ldarch *lda)
 		case ldo_interp:
 			neworder = order_clone(lda, order);
 			neworder->ldo_wurst = strdup(LD_INTERP);
-			neworder->ldo_wsize = ALIGN(sizeof LD_INTERP);
+			neworder->ldo_wsize = ALIGN(neworder->ldo_wsize);
 			TAILQ_INSERT_TAIL(&headorder, neworder, ldo_entry);
 			break;
 
-		case ldo_note:
+		case ldo_ehfrh:
+			neworder = order_clone(lda, order);
+			neworder->ldo_wurst = calloc(1, 4);
+			neworder->ldo_wsize = ALIGN(neworder->ldo_wurst);
+			{
+				uint8_t *p = neworder->ldo_wurst;
+				p[0] = 1;	/* version */
+#define	DW_EH_PE_omit	0xff
+				p[1] = DW_EH_PE_omit;
+				p[2] = DW_EH_PE_omit;
+				p[3] = DW_EH_PE_omit;
+			}
+			TAILQ_INSERT_TAIL(&headorder, neworder, ldo_entry);
 			break;
 
 		case ldo_symtab:

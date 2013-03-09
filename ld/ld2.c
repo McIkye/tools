@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011 Michael Shalayeff
+ * Copyright (c) 2009-2013 Michael Shalayeff
  * All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -295,8 +295,8 @@ ldmap(struct headorder *headorder)
 			ord->ldo_addr = point;
 			break;
 
-		case ldo_note:
 		case ldo_interp:
+		case ldo_ehfrh:
 		case ldo_symtab:
 		case ldo_strtab:
 			/* this is the output section header */
@@ -881,8 +881,8 @@ elf_addreloc(struct objlist *ol, struct section *os, struct relist *r,
 	int si;
 
 	if ((si = ELF_R_SYM(rel->r_info)) >= ol->ol_naux)
-		errx(1, "%s: invalid reloc #%ld %x",
-		    ol->ol_path, r - os->os_rels, rel->r_info);
+		errx(1, "%s: invalid reloc #%ld 0x%x",
+		    ol->ol_path, r - os->os_rels, (unsigned)rel->r_info);
 	if (rel->r_offset > shbits->sh_size)
 		errx(1, "%s: reloc #%ld offset 0x%llx is out of range",
 		    ol->ol_path, r - os->os_rels, (quad_t)rel->r_offset);
