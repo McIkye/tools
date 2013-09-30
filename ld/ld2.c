@@ -36,6 +36,7 @@ static const char rcsid[] =
 
 /* some of these also duplicate libelf/elf.c */
 #if ELFSIZE == 32
+#define	ELF_ADDRALIGN	4
 #define	ELF_HDR(h)	((h).elf32)
 #define	ELF_SYM(h)	((h).sym32)
 #define	uLD		uLD32
@@ -70,6 +71,7 @@ static const char rcsid[] =
 #define	elf_prefer	elf32_prefer
 #define	elf_seek	elf32_seek
 #elif ELFSIZE == 64
+#define	ELF_ADDRALIGN	8
 #define	ELF_HDR(h)	((h).elf64)
 #define	ELF_SYM(h)	((h).sym64)
 #define	uLD		uLD64
