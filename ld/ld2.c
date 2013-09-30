@@ -1384,13 +1384,30 @@ uLD(const char *name, char *v, int *size, int flags)
 			 */
 			if (rsh->sh_type == SHT_RELA)
 				ra += sym->st_value;
-			else
-				/* XXX hack in i386-only for now */
+			else switch (eh->e_machine) {
+#if ELFSIZE == 32
+			case EM_ARM:
+				arm_fixone(v + sh->sh_offset + r->r_offset,
+				    sym->st_value, 0, ELF_R_TYPE(r->r_info));
+				break;
+			case EM_386:
 				i386_fixone(v + sh->sh_offset + r->r_offset,
-				    sym->st_value, 0, ELF32_R_TYPE(r->r_info));
+				    sym->st_value, 0, ELF_R_TYPE(r->r_info));
+				break;
+#else /* ELFSIZE == 64 */
+			case EM_AMD64:
+				amd64_fixone(v + sh->sh_offset + r->r_offset,
+				    sym->st_value, 0, ELF_R_TYPE(r->r_info));
+				break;
+#endif
+			case EM_PARISC:
+				hppa_fixone(v + sh->sh_offset + r->r_offset,
+				    sym->st_value, 0, ELF_R_TYPE(r->r_info));
+				break;
+			}
 
 			if (!sect[sym->st_shndx])
-				errx(1, "%s: misong section #%d",
+				errx(1, "%s: missing section #%d",
 				    name, sym->st_shndx);
 			nus[ELF_R_SYM(r->r_info)] = sect[sym->st_shndx];
 		}
