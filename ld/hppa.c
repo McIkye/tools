@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static const char rcsid[] = "$ABSD: hppa.c,v 1.3 2012/06/03 19:35:51 mickey Exp $";
+static const char rcsid[] = "$ABSD: hppa.c,v 1.4 2013/03/09 23:34:53 mickey Exp $";
 #endif
 
 #include <sys/param.h>
