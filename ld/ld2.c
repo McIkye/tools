@@ -208,7 +208,7 @@ ldmap(struct headorder *headorder)
 		ord->ldo_sno = nsect++;
 		shdr->sh_type = ord->ldo_type;
 		shdr->sh_flags = ord->ldo_shflags;
-		shdr->sh_addralign = 4;
+		shdr->sh_addralign = ELF_ADDRALIGN;
 		if (ord->ldo_type == SHT_SYMTAB ||
 		    ord->ldo_type == SHT_DYNSYM) {
 			shdr->sh_link = nsect;
