@@ -222,6 +222,8 @@ int hppa_fix(off_t, struct section *, char *, int);
 int hppa_fixone(char *, uint64_t, uint64_t, uint);
 int i386_fix(off_t, struct section *, char *, int);
 int i386_fixone(char *, uint64_t, uint64_t, uint);
+int sparc64_fix(off_t, struct section *, char *, int);
+int sparc64_fixone(char *, uint64_t, uint64_t, uint);
 
 const struct ldarch *ldinit(void);
 int obj_foreach(int (*)(struct objlist *, void *), void *);

@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: ld2.c,v 1.43 2013/09/30 09:48:03 mickey Exp $";
+    "$ABSD: ld2.c,v 1.45 2013/10/24 09:46:41 mickey Exp $";
 #endif
 
 #include <sys/param.h>
@@ -983,7 +983,13 @@ elf_symadd(struct elf_symtab *es, int is, void *vs, void *v)
 	}
 
 	laname = NULL;
-if (is && *name == '\0') warnx("#%d is null", is);
+if (is && *name == '\0') {
+#define STT_GNU_SPARC_REGISTER STT_LOPROC
+	if (ELF_ST_TYPE(esym->st_info) == STT_GNU_SPARC_REGISTER)
+		errx(1, "rebuild %s with -mno-app-regs", ol->ol_name);
+	else
+		warnx("#%d is null", is);
+}
 
 	switch (esym->st_shndx) {
 	case SHN_UNDEF:
@@ -1397,6 +1403,10 @@ uLD(const char *name, char *v, int *size, int flags)
 #else /* ELFSIZE == 64 */
 			case EM_AMD64:
 				amd64_fixone(v + sh->sh_offset + r->r_offset,
+				    sym->st_value, 0, ELF_R_TYPE(r->r_info));
+				break;
+			case EM_SPARCV9:
+				sparc64_fixone(v + sh->sh_offset + r->r_offset,
 				    sym->st_value, 0, ELF_R_TYPE(r->r_info));
 				break;
 #endif

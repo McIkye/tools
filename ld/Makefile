@@ -1,7 +1,7 @@
 
 PROG=	ld
 SRCS=	ld.c ld32.c ld64.c syms.c \
-	amd64.c arm.c hppa.c i386.c
+	amd64.c arm.c hppa.c i386.c sparc64.c
 CLEANFILES+=ld32.c ld64.c
 CPPFLAGS+=-I${.CURDIR} -I${.CURDIR}/../nm
 CFLAGS+=-Wall -g
