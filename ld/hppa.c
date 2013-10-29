@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static const char rcsid[] = "$ABSD: hppa.c,v 1.4 2013/03/09 23:34:53 mickey Exp $";
+static const char rcsid[] = "$ABSD: hppa.c,v 1.5 2013/10/29 12:07:05 mickey Exp $";
 #endif
 
 #include <sys/param.h>
@@ -283,7 +283,7 @@ hppa_fix(off_t off, struct section *os, char *sbuf, int len)
 }
 
 int
-hppa_fixone(char *p, uint64_t val, uint64_t addend, uint type)
+hppa_fixone(char *p, uint64_t val, int64_t addend, uint type)
 {
 	uint32_t v32;
 

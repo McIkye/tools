@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: sparc64.c,v 1.1 2013/10/24 09:46:41 mickey Exp $";
+    "$ABSD: sparc64.c,v 1.2 2013/10/29 12:07:05 mickey Exp $";
 #endif
 
 #include <sys/param.h>
@@ -196,7 +196,7 @@ sparc64_fix(off_t off, struct section *os, char *sbuf, int len)
 }
 
 int
-sparc64_fixone(char *p, uint64_t val, uint64_t addend, uint type)
+sparc64_fixone(char *p, uint64_t val, int64_t addend, uint type)
 {
 	uint64_t v64;
 	uint32_t v32;

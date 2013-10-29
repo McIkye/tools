@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: amd64.c,v 1.8 2013/03/09 23:34:53 mickey Exp $";
+    "$ABSD: amd64.c,v 1.9 2013/10/29 12:07:05 mickey Exp $";
 #endif
 
 #include <sys/param.h>
@@ -217,7 +217,7 @@ amd64_fix(off_t off, struct section *os, char *sbuf, int len)
 }
 
 int
-amd64_fixone(char *p, uint64_t val, uint64_t addend, uint type)
+amd64_fixone(char *p, uint64_t val, int64_t addend, uint type)
 {
 	uint64_t v64;
 	uint32_t v32;

@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: arm.c,v 1.7 2013/03/09 23:34:53 mickey Exp $";
+    "$ABSD: arm.c,v 1.8 2013/10/29 12:07:05 mickey Exp $";
 #endif
 
 #include <sys/param.h>
@@ -172,7 +172,7 @@ arm_fix(off_t off, struct section *os, char *sbuf, int len)
 }
 
 int
-arm_fixone(char *p, uint64_t val, uint64_t addend, uint type)
+arm_fixone(char *p, uint64_t val, int64_t addend, uint type)
 {
 	uint32_t v32;
 	uint16_t v16;

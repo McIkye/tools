@@ -94,7 +94,8 @@ struct xreflist {
  * links to the symbol once the symbol table has been loaded.
  */
 struct relist {
-	uint64_t rl_addr, rl_addend;	/* reloc addr and addend */
+	uint64_t rl_addr;
+	int64_t rl_addend;
 	struct symlist *rl_sym;		/* referene symbol */
 	u_char rl_type;			/* relocation type */
 };
@@ -215,15 +216,15 @@ extern const struct ldorder
     i386_order[], m68k_order[], mips_order[], ppc_order[],
     sh_order[], sparc_order[], sparc64_order[], vax_order[];
 int amd64_fix(off_t, struct section *, char *, int);
-int amd64_fixone(char *, uint64_t, uint64_t, uint);
+int amd64_fixone(char *, uint64_t, int64_t, uint);
 int arm_fix(off_t, struct section *, char *, int);
-int arm_fixone(char *, uint64_t, uint64_t, uint);
+int arm_fixone(char *, uint64_t, int64_t, uint);
 int hppa_fix(off_t, struct section *, char *, int);
-int hppa_fixone(char *, uint64_t, uint64_t, uint);
+int hppa_fixone(char *, uint64_t, int64_t, uint);
 int i386_fix(off_t, struct section *, char *, int);
-int i386_fixone(char *, uint64_t, uint64_t, uint);
+int i386_fixone(char *, uint64_t, int64_t, uint);
 int sparc64_fix(off_t, struct section *, char *, int);
-int sparc64_fixone(char *, uint64_t, uint64_t, uint);
+int sparc64_fixone(char *, uint64_t, int64_t, uint);
 
 const struct ldarch *ldinit(void);
 int obj_foreach(int (*)(struct objlist *, void *), void *);

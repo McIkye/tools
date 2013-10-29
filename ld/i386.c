@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: i386.c,v 1.18 2013/03/09 23:34:53 mickey Exp $";
+    "$ABSD: i386.c,v 1.19 2013/10/29 12:07:05 mickey Exp $";
 #endif
 
 #include <sys/param.h>
@@ -197,7 +197,7 @@ i386_fix(off_t off, struct section *os, char *sbuf, int len)
 }
 
 int
-i386_fixone(char *p, uint64_t val, uint64_t addend, uint type)
+i386_fixone(char *p, uint64_t val, int64_t addend, uint type)
 {
 	uint32_t v32;
 	uint16_t v16;
