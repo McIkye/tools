@@ -25,7 +25,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: readelf.c,v 1.5 2013/10/31 10:27:17 mickey Exp $";
+    "$ABSD: readelf.c,v 1.6 2013/11/05 16:54:48 mickey Exp $";
 #endif
 
 #include "readelf.h"
@@ -733,6 +733,16 @@ const char elf_relhppa[][16] = {
 	"RELATIVE"
 };
 
+const char elf_relmips[][16] = {
+	"NONE",
+	"16",
+	"32",
+	"REL32",
+	"26",
+	"HI16",
+	"LO16"
+};
+
 const char elf_relppc[][16] = {
 	"NONE",
 	"32",
@@ -966,6 +976,12 @@ elf_reltype(int m, int r)
 		p = "SH";
 		rr = elf_relish[r];
 		n = sizeof elf_relish / sizeof elf_relish[0];
+		break;
+
+	case EM_MIPS:
+		p = "MIPS";
+		rr = elf_relmips[r];
+		n = sizeof elf_relmips / sizeof elf_relmips[0];
 		break;
 
 	default:
