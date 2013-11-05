@@ -25,7 +25,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: readelf.c,v 1.6 2013/11/05 16:54:48 mickey Exp $";
+    "$ABSD: readelf.c,v 1.7 2013/11/05 17:00:45 mickey Exp $";
 #endif
 
 #include "readelf.h"
@@ -740,7 +740,13 @@ const char elf_relmips[][16] = {
 	"REL32",
 	"26",
 	"HI16",
-	"LO16"
+	"LO16",
+	"GPREL16",
+	"LITERAL",
+	"GOT16",
+	"PC16",
+	"CALL16",
+	"GPREL32"
 };
 
 const char elf_relppc[][16] = {
