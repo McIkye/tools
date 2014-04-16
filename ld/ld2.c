@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2013 Michael Shalayeff
+ * Copyright (c) 2009-2014 Michael Shalayeff
  * All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -160,13 +160,16 @@ ldmap(struct headorder *headorder)
 	/* assign commons */
 	obj_foreach(elf_commons, NULL);
 
+	if (gc_sections)
+		headorder = elf_gcs(headorder);
+
 	/*
 	 * stroll through the order counting {e,p,s}hdrs;
 	 */
 	shdr = sysobj.ol_sects;
 	sysobj.ol_sections[0].os_sect = shdr++;
 	for (nsect = 1, nphdr = 0, ord = TAILQ_FIRST(headorder);
-	    ord != TAILQ_END(NULL); ord = next) {
+	    ord != TAILQ_END(headorder); ord = next) {
 
 		next = TAILQ_NEXT(ord, ldo_entry);
 		if (ord->ldo_order == ldo_symbol ||
@@ -504,6 +507,8 @@ TODO
 				continue;
 		}
 		TAILQ_INSERT_TAIL(&neworder->ldo_seclst, os, os_entry);
+		if (neworder->ldo_flags & LD_USED)
+			os->os_flags |= SECTION_USED;
 	}
 
 	return 0;
@@ -655,7 +660,7 @@ ldload(const char *name, struct ldorder *order)
 	setvbuf(fp, obuf, _IOFBF, sizeof obuf);
 
 	/* dump out sections */
-	for (ord = order; ord != TAILQ_END(NULL);
+	for (ord = order; ord != TAILQ_END(ord);
 	    ord = TAILQ_NEXT(ord, ldo_entry)) {
 		const char *inname = NULL;
 		FILE *sfp = NULL;

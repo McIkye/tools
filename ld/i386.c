@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2013 Michael Shalayeff
+ * Copyright (c) 2009-2014 Michael Shalayeff
  * All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -39,11 +39,11 @@ static const char rcsid[] =
 const struct ldorder i386_order[] = {
 	{ ldo_symbol,	"_start", N_UNDF, 0, LD_ENTRY },
 	{ ldo_interp,	ELF_INTERP, SHT_PROGBITS, SHF_ALLOC,
-			LD_CONTAINS | LD_DYNAMIC },
+			LD_CONTAINS | LD_DYNAMIC | LD_USED },
 	{ ldo_section,	ELF_NOTE, SHT_NOTE, SHF_ALLOC,
-			LD_NONMAGIC | LD_NOOMAGIC },
+			LD_NONMAGIC | LD_NOOMAGIC | LD_USED },
 	{ ldo_section,	ELF_INIT, SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR,
-			0, XFILL },
+			LD_USED, XFILL },
 	{ ldo_section,	ELF_PLT, SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR,
 			LD_DYNAMIC, XFILL },
 	{ ldo_section,	ELF_TEXT, SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR,
@@ -51,7 +51,7 @@ const struct ldorder i386_order[] = {
 	{ ldo_section,	ELF_GCC_LINK1T, SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR,
 			LD_LINK1, XFILL },
 	{ ldo_section,	ELF_FINI, SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR,
-			0, XFILL },
+			LD_USED, XFILL },
 	{ ldo_expr,	". += 0x1000", 0, 0, LD_NOOMAGIC },
 	{ ldo_symbol,	"etext", N_ABS },
 	{ ldo_symbol,	"_etext", N_ABS },
@@ -70,8 +70,8 @@ const struct ldorder i386_order[] = {
 			0, DFILL },
 	{ ldo_section,	ELF_GCC_LINK1D, SHT_PROGBITS, SHF_ALLOC | SHF_WRITE,
 			LD_LINK1 },
-	{ ldo_section,	ELF_CTORS, SHT_PROGBITS, SHF_ALLOC | SHF_WRITE },
-	{ ldo_section,	ELF_DTORS, SHT_PROGBITS, SHF_ALLOC | SHF_WRITE },
+	{ ldo_section,	ELF_CTORS, SHT_PROGBITS, SHF_ALLOC|SHF_WRITE, LD_USED },
+	{ ldo_section,	ELF_DTORS, SHT_PROGBITS, SHF_ALLOC|SHF_WRITE, LD_USED },
 	{ ldo_expr,	". += 0x1000", 0, 0, LD_NOOMAGIC },
 	{ ldo_symbol,	"__got_start", N_ABS, 0, LD_DYNAMIC },
 	{ ldo_section,	ELF_GOT, SHT_PROGBITS, SHF_ALLOC, LD_DYNAMIC },

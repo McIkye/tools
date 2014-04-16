@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2013 Michael Shalayeff
+ * Copyright (c) 2009-2014 Michael Shalayeff
  * All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -58,6 +58,8 @@ int dflag;	/* force common allocation (even for -r) */
 int Bflag;	/* 0 - static, 1 - dynamic, 2 - shlib */
 int Xflag;	/* 0 - keep, 1 - sieve temps, 2 - sieve all locals */
 int check_sections;
+int gc_sections;
+int export_dynamic;
 int cref;
 int nostdlib;
 int pie;
@@ -104,7 +106,8 @@ const struct option longopts[] = {
 	{ "auxiliary",		required_argument,	0, 'f' },
 	{ "filter",		required_argument,	0, 'F' },
 	{ "fini",		required_argument,	0, 'c' },
-	{ "gc-sections",	no_argument,		0, 0, },
+	{ "gc-sections",	no_argument,	&gc_sections, 1 },
+	{ "no-gc-sections",	no_argument,	&gc_sections, 0 },
 	{ "soname",		required_argument,	0, 'h' },
 	{ "init",		required_argument,	0, 'C' },
 	{ "library",		required_argument,	0, 'l' },
@@ -220,13 +223,16 @@ main(int argc, char *argv[])
 			}
 			break;
 
-		case 'e':	/* entry */
-			if (!strcmp(argv[optind-1], "-export-dynamic"))
-				optind++;
-			entry_name = optarg;
+		case 'e':	/* entry/export-dynamic */
+			if (!strcmp(argv[optind-1], "-export-dynamic")) {
+				optind--;
+				export_dynamic++;
+			} else
+				entry_name = optarg;
 			break;
 
 		case 'E':	/* export dynamic symbols */
+			export_dynamic++;
 			break;
 
 		case 'f':	/* add name to DT_AUXILIARY list */
@@ -277,6 +283,7 @@ main(int argc, char *argv[])
 			break;
 
 		case 'O':	/* optimise the otput binary (slow) */
+			gc_sections++;
 			break;
 
 		case 'q':	/* leave the relocs in after full linking */
@@ -473,7 +480,7 @@ ldinit(void)
 		}
 	}
 
-	if (!sysobj.ol_nsect)	
+	if (!sysobj.ol_nsect)
 		errx(1, "no sections defined");
 
 	if (!(sysobj.ol_sections = calloc(sysobj.ol_nsect,
@@ -1013,6 +1020,72 @@ order_check(struct objlist *ol, void *v)
 }
 
 /*
+ * remove unreferenced sections from the order;
+ * only called if --gc-sections was specified
+ */
+struct headorder *
+elf_gcs(struct headorder *headorder)
+{
+	struct ldorder *ord;
+	struct section *os, *next;
+	int changed;
+
+	if (!sentry || !sentry->sl_sect)
+		errx(1, "entry point not defined");
+	sentry->sl_sect->os_flags |= SECTION_USED;
+
+	/* pass 1: roll thru the order marking sections as used */
+	changed = 1;
+	TAILQ_FOREACH(ord, headorder, ldo_entry) {
+		if (changed) {
+			ord = TAILQ_FIRST(headorder);
+			changed = 0;
+		}
+
+		if (ord->ldo_order != ldo_section)
+			continue;
+
+		TAILQ_FOREACH(os, &ord->ldo_seclst, os_entry) {
+			struct relist *rp, *er;
+			if (!(os->os_flags & SECTION_USED))
+				continue;
+
+			for (rp = os->os_rels, er = &os->os_rels[os->os_nrls];
+			    rp < er; rp++)
+				if (rp->rl_sym->sl_sect &&
+				    !(rp->rl_sym->sl_sect->os_flags &
+				    SECTION_USED)) {
+					changed = 1;
+					rp->rl_sym->sl_sect->os_flags |=
+					    SECTION_USED;
+				}
+		}
+	}
+
+	/* pass 2: roll thru the order removing unused sections */
+	TAILQ_FOREACH(ord, headorder, ldo_entry) {
+		if (ord->ldo_order != ldo_section)
+			continue;
+
+		for(os = TAILQ_FIRST(&ord->ldo_seclst);
+		    os != TAILQ_END(&ord->ldo_seclst); os = next) {
+			next = TAILQ_NEXT(os, os_entry);
+
+			/*
+			 * simply drop the section from the list
+			 * and avoid the free(3) hustle as we are
+			 * unlikely to need more memory and exit(1)
+			 * brings freedom to everyone
+			 */
+			if (!(os->os_flags & SECTION_USED))
+				TAILQ_REMOVE(&ord->ldo_seclst, os, os_entry);
+		}
+	}
+
+	return headorder;
+}
+
+/*
  * a wrapper for the micro-linker (ld2.c)
  * read the whole object into memory and
  * call appropriate worker (32/64)
@@ -1057,7 +1130,7 @@ uLD(const char *name, const char *output)
 	h = (union banners *)v;
 	if (IS_ELF(h->elf32) &&
 	    h->elf32.e_ident[EI_CLASS] == ELFCLASS32 &&
-	    h->elf32.e_ident[EI_VERSION] == ELF_TARG_VER) 
+	    h->elf32.e_ident[EI_VERSION] == ELF_TARG_VER)
 		rv = uLD32(name, v, &size, Xflag);
 	else if (IS_ELF(h->elf64) &&
 	    h->elf64.e_ident[EI_CLASS] == ELFCLASS64 &&

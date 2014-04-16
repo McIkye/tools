@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2013 Michael Shalayeff
+ * Copyright (c) 2009-2014 Michael Shalayeff
  * All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -120,6 +120,7 @@ struct section {
 	int os_flags;
 #define	SECTION_ORDER	0x10000000	/* pulled into some order */
 #define	SECTION_LOADED	0x20000000	/* been loaded */
+#define	SECTION_USED	0x40000000	/* syms in this section's been refed */
 #define	SECTION_64	0x80000000
 };
 
@@ -191,6 +192,7 @@ struct ldorder {
 #define	LD_ENTRY	0x1000	/* entry point */
 #define	LD_LINK1	0x2000	/* link once bits */
 #define	LD_IGNORE	0x4000	/* ignore this entry and whatever matches */
+#define	LD_USED		0x8000	/* mark all collected sections as used */
 	uint64_t ldo_filler;	/* gap filler */
 
 	TAILQ_HEAD(, section) ldo_seclst;	/* all sections */
@@ -209,7 +211,7 @@ extern const char *entry_name;
 extern char *mapfile;
 extern struct ldorder *bsorder;
 extern int Xflag, errors, printmap, cref, relocatable, strip, warncomm;
-extern int machine, endian, elfclass, magic, pie, Bflag;
+extern int machine, endian, elfclass, magic, pie, Bflag, gc_sections;
 extern u_int64_t start_text, start_data, start_bss;
 extern const struct ldorder
     alpha_order[], amd64_order[], arm_order[], hppa_order[],
@@ -228,6 +230,7 @@ int sparc64_fixone(char *, uint64_t, int64_t, uint);
 
 const struct ldarch *ldinit(void);
 int obj_foreach(int (*)(struct objlist *, void *), void *);
+struct headorder *elf_gcs(struct headorder *);
 
 /* ld2.c */
 int uLD32(const char *, char *, int *, int);
