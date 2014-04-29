@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003-2009 Michael Shalayeff
+ * Copyright (c) 2003-2014 Michael Shalayeff
  * Copyright (c) 1989, 1993
  *	The Regents of the University of California.  All rights reserved.
  *
@@ -334,7 +334,7 @@ mmbr_name(struct ar_hdr *arh, char **name, int baselen, int *namelen, FILE *fp)
 	if ((arh->ar_name[0] == '#') &&
 	    (arh->ar_name[1] == '1') &&
 	    (arh->ar_name[2] == '/') &&
-	    (isdigit(arh->ar_name[3]))) {
+	    (isdigit((unsigned char)arh->ar_name[3]))) {
 		int len = atoi(&arh->ar_name[3]);
 
 		if (len > *namelen) {
@@ -370,10 +370,13 @@ int
 show_symtab(off_t off, u_long len, const char *name, FILE *fp)
 {
 	struct ar_hdr ar_head;
+	off_t ooff;
 	int *symtab, *ps;
 	char *strtab, *p;
 	int num, rval = 0;
 	int namelen;
+
+	ooff = ftello(fp);
 
 	MMAP(symtab, len, PROT_READ, MAP_PRIVATE|MAP_FILE, fileno(fp), off);
 	if (symtab == MAP_FAILED)
@@ -406,6 +409,7 @@ show_symtab(off_t off, u_long len, const char *name, FILE *fp)
 		printf("%s in %s\n", strtab, p);
 	}
 
+	fseeko(fp, ooff, SEEK_SET);
 	free(p);
 	MUNMAP(symtab, len);
 	return (rval);
@@ -420,8 +424,7 @@ show_symdef(off_t off, u_long len, const char *name, FILE *fp)
 {
 	struct ranlib *prn, *eprn;
 	struct ar_hdr ar_head;
-	void *symdef;
-	char *strtab, *p;
+	char *symdef, *strtab, *p;
 	u_long size;
 	int namelen, rval = 0;
 
@@ -439,7 +442,7 @@ show_symdef(off_t off, u_long len, const char *name, FILE *fp)
 	}
 
 	size = *(u_long *)symdef;
-	prn = symdef + sizeof(u_long);
+	prn = (struct ranlib *)(symdef + sizeof(u_long));
 	eprn = prn + size / sizeof(*prn);
 	strtab = symdef + sizeof(u_long) + size + sizeof(u_long);
 
@@ -550,6 +553,10 @@ show_archive(int count, const char *fname, FILE *fp)
 				symtaboff = last_ar_off;
 				goto skip;
 			}
+		} else if (memcmp(ar_head.ar_name, AR_SYM64,
+		    sizeof(AR_SYM64) - 1) == 0) {
+			/* IRIX6-compatible archive map */
+			goto skip;
 		}
 
 		if (!issize && armap && symtablen && symtaboff) {
