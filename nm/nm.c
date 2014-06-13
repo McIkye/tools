@@ -42,12 +42,11 @@ static const char copyright[] =
 #if 0
 static const char sccsid[] = "@(#)nm.c	8.1 (Berkeley) 6/6/93";
 #else
-static const char rcsid[] = "$ABSD: nm.c,v 1.17 2012/06/15 16:35:15 mickey Exp $";
+static const char rcsid[] = "$ABSD: nm.c,v 1.19 2014/06/13 16:19:52 mickey Exp $";
 #endif
 #endif
 
 #include <sys/param.h>
-#include <sys/mman.h>
 #include <a.out.h>
 #include <elf_abi.h>
 #include <stab.h>
@@ -66,7 +65,6 @@ static const char rcsid[] = "$ABSD: nm.c,v 1.17 2012/06/15 16:35:15 mickey Exp $
 #include <string.h>
 #include <getopt.h>
 #include <elfuncs.h>
-#include "util.h"
 
 /* XXX get shared code to handle a.out byte-order swaps */
 #include "byte.c"
@@ -370,22 +368,27 @@ int
 show_symtab(off_t off, u_long len, const char *name, FILE *fp)
 {
 	struct ar_hdr ar_head;
-	off_t ooff;
 	int *symtab, *ps;
 	char *strtab, *p;
 	int num, rval = 0;
 	int namelen;
 
-	ooff = ftello(fp);
+	if ((symtab = malloc(len)) == NULL) {
+		warn("%s: malloc", name);
+		return 1;
+	}
 
-	MMAP(symtab, len, PROT_READ, MAP_PRIVATE|MAP_FILE, fileno(fp), off);
-	if (symtab == MAP_FAILED)
-		return (1);
+	if (pread(fileno(fp), symtab, len, off) != len) {
+		free(symtab);
+		warn("%s: pread", name);
+		return 1;
+	}
 
 	namelen = sizeof(ar_head.ar_name);
 	if ((p = malloc(sizeof(ar_head.ar_name))) == NULL) {
 		warn("%s: malloc", name);
-		MUNMAP(symtab, len);
+		free(symtab);
+		return 1;
 	}
 
 	printf("\nArchive index:\n");
@@ -409,9 +412,65 @@ show_symtab(off_t off, u_long len, const char *name, FILE *fp)
 		printf("%s in %s\n", strtab, p);
 	}
 
-	fseeko(fp, ooff, SEEK_SET);
 	free(p);
-	MUNMAP(symtab, len);
+	free(symtab);
+	return (rval);
+}
+
+/*
+ * show_sym64()
+ *	show archive ranlib index (irix6)
+ */
+int
+show_sym64(off_t off, u_long len, const char *name, FILE *fp)
+{
+	struct ar_hdr ar_head;
+	uint64_t *symtab, *ps;
+	char *strtab, *p;
+	int num, rval = 0;
+	int namelen;
+
+	if ((symtab = malloc(len)) == NULL) {
+		warn("%s: malloc", name);
+		return 1;
+	}
+
+	if (pread(fileno(fp), symtab, len, off) != len) {
+		free(symtab);
+		warn("%s: pread", name);
+		return 1;
+	}
+
+	namelen = sizeof(ar_head.ar_name);
+	if ((p = malloc(sizeof(ar_head.ar_name))) == NULL) {
+		warn("%s: malloc", name);
+		free(symtab);
+		return 1;
+	}
+
+	printf("\nArchive index:\n");
+	num = betoh64(*symtab);
+	strtab = (char *)(symtab + num + 1);
+	for (ps = symtab + 1; num--; ps++, strtab += strlen(strtab) + 1) {
+		if (pread(fileno(fp), &ar_head, sizeof ar_head,
+		    betoh64(*ps)) != sizeof ar_head ||
+		    memcmp(ar_head.ar_fmag, ARFMAG, sizeof(ar_head.ar_fmag))) {
+			warnx("%s: member pread", name);
+			rval = 1;
+			break;
+		}
+
+		*p = '\0';
+		if (mmbr_name(&ar_head, &p, 0, &namelen, fp)) {
+			rval = 1;
+			break;
+		}
+
+		printf("%s in %s\n", strtab, p);
+	}
+
+	free(p);
+	free(symtab);
 	return (rval);
 }
 
@@ -428,16 +487,21 @@ show_symdef(off_t off, u_long len, const char *name, FILE *fp)
 	u_long size;
 	int namelen, rval = 0;
 
-	MMAP(symdef, len, PROT_READ, MAP_PRIVATE|MAP_FILE, fileno(fp), off);
-	if (symdef == MAP_FAILED)
-		return (1);
-	if (usemmap)
-		(void)madvise(symdef, len, MADV_SEQUENTIAL);
+	if ((symdef = malloc(len)) == NULL) {
+		warn("%s: malloc", name);
+		return 1;
+	}
+
+	if (pread(fileno(fp), symdef, len, off) != len) {
+		free(symdef);
+		warn("%s: pread", name);
+		return 1;
+	}
 
 	namelen = sizeof(ar_head.ar_name);
 	if ((p = malloc(sizeof(ar_head.ar_name))) == NULL) {
 		warn("%s: malloc", name);
-		MUNMAP(symdef, len);
+		free(symdef);
 		return (1);
 	}
 
@@ -471,7 +535,7 @@ show_symdef(off_t off, u_long len, const char *name, FILE *fp)
 	}
 
 	free(p);
-	MUNMAP(symdef, len);
+	free(symdef);
 	return (rval);
 }
 
@@ -486,7 +550,7 @@ show_archive(int count, const char *fname, FILE *fp)
 	union hdr exec_head;
 	off_t last_ar_off, foff, symtaboff;
 	char *name;
-	u_long mmbrlen, symtablen;
+	u_long mmbrlen, symtablen, sym64;
 	int i, rval, baselen, namelen;
 
 	baselen = strlen(fname) + 3;
@@ -498,6 +562,7 @@ show_archive(int count, const char *fname, FILE *fp)
 	nametab = NULL;
 	symtaboff = 0;
 	symtablen = 0;
+	sym64 = 0;
 
 	/* while there are more entries in the archive */
 	while (fread(&ar_head, sizeof(ar_head), 1, fp) == 1) {
@@ -545,27 +610,27 @@ show_archive(int count, const char *fname, FILE *fp)
 			namtablen = mmbrlen;
  			if (issize || !armap || !symtablen || !symtaboff)
  				goto skip;
-		} else if (strncmp(ar_head.ar_name, RANLIBMAG2,
-		    sizeof(RANLIBMAG2) - 1) == 0) {
-			/* if nametab hasn't been seen yet -- doit later */
-			if (!nametab) {
-				symtablen = mmbrlen;
-				symtaboff = last_ar_off;
-				goto skip;
-			}
 		} else if (memcmp(ar_head.ar_name, AR_SYM64,
 		    sizeof(AR_SYM64) - 1) == 0) {
 			/* IRIX6-compatible archive map */
+			symtablen = mmbrlen;
+			symtaboff = last_ar_off;
+			sym64 = 1;
+			goto skip;
+		} else if (strncmp(ar_head.ar_name, RANLIBMAG2,
+		    sizeof(RANLIBMAG2) - 1) == 0) {
+			/* if nametab hasn't been seen yet -- doit later */
+			symtablen = mmbrlen;
+			symtaboff = last_ar_off;
 			goto skip;
 		}
 
 		if (!issize && armap && symtablen && symtaboff) {
-			if (show_symtab(symtaboff, symtablen, fname, fp)) {
+			armap = 0;	/* in any case we've tried... */
+			if ((sym64? show_sym64 : show_symtab)
+			    (symtaboff, symtablen, fname, fp)) {
 				rval = 1;
 				break;
-			} else {
-				symtaboff = 0;
-				symtablen = 0;
 			}
 		}
 
@@ -793,12 +858,17 @@ show_file(int count, int warn_fmt, const char *name, FILE *fp, off_t foff, union
 			free(names);
 			return(1);
 		}
+
 		stabsize = fix_32_order(w, N_GETMID(head->aout));
-		MMAP(stab, stabsize, PROT_READ, MAP_PRIVATE|MAP_FILE,
-		    fileno(fp), staboff);
-		if (stab == MAP_FAILED) {
-			free(names);
-			return (1);
+		if ((stab = malloc(stabsize)) == NULL) {
+			warn("%s: malloc", name);
+			return 1;
+		}
+
+		if (pread(fileno(fp), stab, stabsize, staboff) != stabsize) {
+			free(stab);
+			warn("%s: pread", name);
+			return 1;
 		}
 
 		stabsize -= 4;		/* we already have the size */
@@ -844,9 +914,6 @@ show_file(int count, int warn_fmt, const char *name, FILE *fp, off_t foff, union
 	 * it seems that string table is sequential
 	 * relative to the symbol table order
 	 */
-	if (sfunc == NULL && usemmap)
-		(void)madvise(stab, stabsize, MADV_SEQUENTIAL);
-
 	if ((snames = calloc(nrawnames, sizeof *snames)) == NULL) {
 		warn("%s: malloc snames", name);
 		free(names);
@@ -893,10 +960,7 @@ show_file(int count, int warn_fmt, const char *name, FILE *fp, off_t foff, union
 
 	free(snames);
 	free(names);
-	if (aout)
-		MUNMAP(stab, stabsize);
-	else
-		free(stab);
+	free(stab);
 	return(0);
 }
 
