@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf.c,v 1.31 2012/06/15 01:52:57 mickey Exp $";
+    "$ABSD: elf.c,v 1.32 2014/06/16 11:06:56 mickey Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -90,26 +90,6 @@ static const char rcsid[] =
 #define	elf_shn2type	elf64_shn2type
 #else
 #error "Unsupported ELF class"
-#endif
-
-#ifndef	SHN_MIPS_ACOMMON
-#define	SHN_MIPS_ACOMMON	SHN_LOPROC + 0
-#endif
-#ifndef	SHN_MIPS_TEXT
-#define	SHN_MIPS_TEXT		SHN_LOPROC + 1
-#endif
-#ifndef	SHN_MIPS_DATA
-#define	SHN_MIPS_DATA		SHN_LOPROC + 2
-#endif
-#ifndef	SHN_MIPS_SUNDEFINED
-#define	SHN_MIPS_SUNDEFINED	SHN_LOPROC + 4
-#endif
-#ifndef	SHN_MIPS_SCOMMON
-#define	SHN_MIPS_SCOMMON	SHN_LOPROC + 3
-#endif
-
-#ifndef	STT_PARISC_MILLI
-#define	STT_PARISC_MILLI	STT_LOPROC + 0
 #endif
 
 int
@@ -381,9 +361,10 @@ elf2nlist(Elf_Sym *sym, const Elf_Ehdr *eh, const Elf_Shdr *shdr,
 		break;
 
 	case STT_FUNC:
-		type = elf_shn2type(eh, sym->st_shndx, NULL);
+		type = elf_shn2type(eh, sym->st_shndx, sn);
 		np->n_type = type < 0? N_TEXT : type;
-		np->n_other = 't';
+		if (type < 0)
+			np->n_other = 't';
 		if (ELF_ST_BIND(sym->st_info) == STB_WEAK) {
 			np->n_type = N_INDR;
 			np->n_other = 'W';
@@ -417,7 +398,8 @@ elf2nlist(Elf_Sym *sym, const Elf_Ehdr *eh, const Elf_Shdr *shdr,
 		np->n_other = '?';
 		break;
 	}
-	if (np->n_type != N_UNDF && ELF_ST_BIND(sym->st_info) != STB_LOCAL) {
+	if ((np->n_type & N_TYPE) != N_UNDF &&
+	    ELF_ST_BIND(sym->st_info) != STB_LOCAL) {
 		np->n_type |= N_EXT;
 		if (np->n_other)
 			np->n_other = toupper(np->n_other);
