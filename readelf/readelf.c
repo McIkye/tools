@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 Michael Shalayeff
+ * Copyright (c) 2012-2014 Michael Shalayeff
  * All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -25,7 +25,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: readelf.c,v 1.8 2013/11/05 17:25:29 mickey Exp $";
+    "$ABSD: readelf.c,v 1.9 2014/06/18 11:46:51 mickey Exp $";
 #endif
 
 #include "readelf.h"
@@ -1041,7 +1041,8 @@ elf_reltype(int m, int r)
 
 	case EM_MIPS:
 		p = "MIPS";
-		rr = elf_relmips[r];
+		r &= 0xff;
+		rr = elf_relmips[r];	/* TODO parse the rest */
 		n = sizeof elf_relmips / sizeof elf_relmips[0];
 		break;
 

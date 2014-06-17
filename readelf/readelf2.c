@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Michael Shalayeff
+ * Copyright (c) 2012-2014 Michael Shalayeff
  * All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -24,7 +24,7 @@
 #include "readelf.h"
 
 #ifndef lint
-static const char rcsid[] = "$ABSD: readelf2.c,v 1.3 2012/06/14 00:15:00 mickey Exp $";
+static const char rcsid[] = "$ABSD: readelf2.c,v 1.4 2014/06/18 11:46:51 mickey Exp $";
 #endif
 
 #if ELFSIZE == 32
@@ -45,6 +45,8 @@ static const char rcsid[] = "$ABSD: readelf2.c,v 1.3 2012/06/14 00:15:00 mickey 
 #define	elf_prsechs	elf32_prsechs
 #define	elf_prsyms	elf32_prsyms
 #define	elf_prels	elf32_prels
+#define	elf_fix_rel	elf32_fix_rel
+#define	elf_fix_rela	elf32_fix_rela
 #elif ELFSIZE == 64
 #define	ELF_HDR(h)	((h).elf64)
 #define	ELF_SYM(h)	((h).sym64)
@@ -63,6 +65,8 @@ static const char rcsid[] = "$ABSD: readelf2.c,v 1.3 2012/06/14 00:15:00 mickey 
 #define	elf_prsechs	elf64_prsechs
 #define	elf_prsyms	elf64_prsyms
 #define	elf_prels	elf64_prels
+#define	elf_fix_rel	elf64_fix_rel
+#define	elf_fix_rela	elf64_fix_rela
 #else
 #error "Unsupported ELF class"
 #endif
@@ -290,52 +294,107 @@ elf_prels(FILE *fp, const char *name, off_t off,
     Elf_Ehdr *eh, void *v, const char *sn)
 {
 	Elf_Shdr *sh;
-	int i, j, n;
+	int i;
 
-	for (i = 0, sh = v; i < eh->e_shnum; sh = v + ++i * eh->e_shentsize)
+	for (i = 0, sh = v; i < eh->e_shnum; sh = v + ++i * eh->e_shentsize) {
+		int n;
+
+		if (sh->sh_type != SHT_REL && sh->sh_type != SHT_RELA)
+			continue;
+
+		if (fseeko(fp, off + sh->sh_offset, SEEK_SET))
+			err(1, "fseeko: %s", name);
+
+		n = sh->sh_size / sh->sh_entsize;
+		printf("\nRelocation section \'%s\' at offset 0x%lx "
+		    "contains %d entries:\n", sn + sh->sh_name,
+		    (long)sh->sh_offset, n);
+		printf("%-8s %-8s %-16s  %9s   %s\n", " Offset",
+		    "  Info", " Type", "Sym.Value",
+		    sh->sh_type == SHT_REL? "Sym. Name" : "Sym. Name + Addend");
+
 		if (sh->sh_type == SHT_REL) {
 			Elf_Rel r;
+			int j;
 
 			if (sh->sh_entsize < sizeof r ||
 			    sh->sh_size % sh->sh_entsize) {
 				warnx("%s: invalid REL section #%d", name, i);
-				continue;
+				break;
 			}
 
-			if (fseeko(fp, off + sh->sh_offset, SEEK_SET))
-				err(1, "fseeko: %s", name);
-
-			n = sh->sh_size / sh->sh_entsize;
-			printf("\nRelocation section \'%s\' at offset 0x%lx "
-			    "contains %d entries:\n", sn + sh->sh_name,
-			    (long)sh->sh_offset, n);
-			printf("%-8s %-8s %-16s %9s  %s\n", " Offset", "  Info",
-			    " Type", "Sym.Value", "Sym. Name");
 			for (j = 0; j < n; j++) {
 				struct sym *sym;
+				int si;
+
 				if (fread(&r, sizeof r, 1, fp) != 1)
 					err(1, "fread: %s", name);
-				if (ELF_R_SYM(r.r_info) >= nsyms)
-					errx(1, "invalid reloc #%d", j);
-				sym = &symidx[ELF_R_SYM(r.r_info)];
+				elf_fix_rel(eh, &r);
+#if ELFSIZE == 64
+				if (eh->e_machine == EM_MIPS)
+					si = ELF64_R_MIPS_SYM(r.r_info);
+				else
+#endif
+				si = ELF_R_SYM(r.r_info);
+				if (si >= nsyms)
+					errx(1, "%s: invalid REL #%d",
+					    name, j);
+				sym = &symidx[si];
 				printf("%08llx %08x %-16s  %08llx   %s\n",
 				    (uint64_t)r.r_offset, (uint32_t)r.r_info,
 				    elf_reltype(eh->e_machine,
+#if ELFSIZE == 64
+				    eh->e_machine == EM_MIPS?
+				      betoh32(ELF64_R_MIPS_TYPE(r.r_info)) :
+#endif
 				      ELF_R_TYPE(r.r_info)),
 				    (uint64_t)ELF_SYM(sym->sl_elfsym).st_value, 
 				    sym->sl_name);
+/* TODO deal with "complex" mips relocs */
 			}
-		} else if (sh->sh_type == SHT_RELA) {
-			Elf_RelA *r;
+		} else {
+			Elf_RelA r;
+			int j;
 
-			if (sh->sh_entsize < sizeof *r ||
+			if (sh->sh_entsize < sizeof r ||
 			    sh->sh_size % sh->sh_entsize) {
 				warnx("%s: invalid RELA section #%d", name, i);
-				continue;
+				break;
 			}
 
-			n = sh->sh_size / sh->sh_entsize;
 			for (j = 0; j < n; j++) {
+				struct sym *sym;
+				int si;
+
+				if (fread(&r, sizeof r, 1, fp) != 1)
+					err(1, "fread: %s", name);
+				elf_fix_rela(eh, &r);
+#if ELFSIZE == 64
+				if (eh->e_machine == EM_MIPS)
+					si = ELF64_R_MIPS_SYM(r.r_info);
+				else
+#endif
+				si = ELF_R_SYM(r.r_info);
+				if (si >= nsyms)
+					errx(1, "%s: invalid RELA #%d",
+					    name, j);
+				sym = &symidx[si];
+				printf("%08llx %08x %-16s  %08llx   %s",
+				    (uint64_t)r.r_offset, (uint32_t)r.r_info,
+				    elf_reltype(eh->e_machine,
+#if ELFSIZE == 64
+				    eh->e_machine == EM_MIPS?
+				      betoh32(ELF64_R_MIPS_TYPE(r.r_info)) :
+#endif
+				      ELF_R_TYPE(r.r_info)),
+				    (uint64_t)ELF_SYM(sym->sl_elfsym).st_value, 
+				    sym->sl_name);
+				if (r.r_addend)
+					printf(" + %llx",
+					    (long long)r.r_addend);
+/* TODO deal with "complex" mips relocs */
+				putchar('\n');
 			}
 		}
+	}
 }
