@@ -154,7 +154,7 @@ elf_scan_shdrs(const Elf_Ehdr *eh, Elf_Shdr *shdr, const char *shstr,
 
 	esh = (Elf_Shdr *)((char *)shdr + eh->e_shnum * eh->e_shentsize);
 	for (i = 0; shdr < esh; i++,
-	    shdr = (Elf_Shdr *)((char *)shdr + shdr->sh_entsize))
+	    shdr = (Elf_Shdr *)((char *)shdr + eh->e_shentsize))
 		if (!(*fn)(shdr, shstr + shdr->sh_name))
 			return shdr;
 
