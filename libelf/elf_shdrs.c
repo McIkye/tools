@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf_shdrs.c,v 1.1 2014/07/16 13:46:57 mickey Exp $";
+    "$ABSD: elf_shdrs.c,v 1.2 2014/07/16 14:41:41 mickey Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
