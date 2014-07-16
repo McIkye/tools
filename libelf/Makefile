@@ -1,10 +1,11 @@
 
 LIB=	elf
-SRCS=	elf32.c elf32_header.c elf32_symload.c elf32_size.c \
-	elf64.c elf64_header.c elf64_symload.c elf64_size.c \
+SRCS=	elf32.c elf32_header.c elf32_shdrs.c elf32_symload.c elf32_size.c \
+	elf64.c elf64_header.c elf64_shdrs.c elf64_symload.c elf64_size.c \
 	checkoff.c
 CFLAGS+=-Wall
-CLEANFILES+=elf32.c elf64.c
+CLEANFILES+=elf32.c elf32_header.c elf32_shdrs.c elf32_symload.c elf32_size.c
+CLEANFILES+=elf64.c elf64_header.c elf64_shdrs.c elf64_symload.c elf64_size.c
 MAN=	elf_size.3
 MLINKS=	elf_size.3 elf_fix_header.3 elf_size.3 elf_chk_header.3 \
 	elf_size.3 elf_fix_note.3 elf_size.3 elf_save_phdrs.3 \
@@ -27,16 +28,22 @@ elf32_header.c: ${.CURDIR}/elf_header.c
 elf64_header.c: ${.CURDIR}/elf_header.c
 	echo '#define ELFSIZE 64' | cat - $> > ${.TARGET}
 
-elf32_size.c: ${.CURDIR}/elf_size.c
+elf32_shdrs.c: ${.CURDIR}/elf_shdrs.c
 	echo '#define ELFSIZE 32' | cat - $> > ${.TARGET}
 
-elf64_size.c: ${.CURDIR}/elf_size.c
+elf64_shdrs.c: ${.CURDIR}/elf_shdrs.c
 	echo '#define ELFSIZE 64' | cat - $> > ${.TARGET}
 
 elf32_symload.c: ${.CURDIR}/elf_symload.c
 	echo '#define ELFSIZE 32' | cat - $> > ${.TARGET}
 
 elf64_symload.c: ${.CURDIR}/elf_symload.c
+	echo '#define ELFSIZE 64' | cat - $> > ${.TARGET}
+
+elf32_size.c: ${.CURDIR}/elf_size.c
+	echo '#define ELFSIZE 32' | cat - $> > ${.TARGET}
+
+elf64_size.c: ${.CURDIR}/elf_size.c
 	echo '#define ELFSIZE 64' | cat - $> > ${.TARGET}
 
 includes:

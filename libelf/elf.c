@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf.c,v 1.32 2014/06/16 11:06:56 mickey Exp $";
+    "$ABSD: elf.c,v 1.33 2014/07/16 13:46:57 mickey Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -49,11 +49,8 @@ static const char rcsid[] =
 #define	swap_half	swap16
 #define	swap_quarter	swap16
 #define	elf_fix_note	elf32_fix_note
-#define	elf_load_shdrs	elf32_load_shdrs
-#define	elf_save_shdrs	elf32_save_shdrs
 #define	elf_load_phdrs	elf32_load_phdrs
 #define	elf_save_phdrs	elf32_save_phdrs
-#define	elf_fix_shdrs	elf32_fix_shdrs
 #define	elf_fix_phdrs	elf32_fix_phdrs
 #define	elf_fix_sym	elf32_fix_sym
 #define	elf_fix_rel	elf32_fix_rel
@@ -76,11 +73,8 @@ static const char rcsid[] =
 #define	swap_half	swap32
 #define	swap_quarter	swap16
 #define	elf_fix_note	elf64_fix_note
-#define	elf_load_shdrs	elf64_load_shdrs
-#define	elf_save_shdrs	elf64_save_shdrs
 #define	elf_load_phdrs	elf64_load_phdrs
 #define	elf_save_phdrs	elf64_save_phdrs
-#define	elf_fix_shdrs	elf64_fix_shdrs
 #define	elf_fix_phdrs	elf64_fix_phdrs
 #define	elf_fix_sym	elf64_fix_sym
 #define	elf_fix_rel	elf64_fix_rel
@@ -104,52 +98,6 @@ elf_fix_note(Elf_Ehdr *eh, Elf_Note *en)
 	en->type = swap32(en->type);
 
 	return (1);
-}
-
-Elf_Shdr *
-elf_load_shdrs(const char *fn, FILE *fp, off_t foff, const Elf_Ehdr *eh)
-{
-	Elf_Shdr *shdr;
-
-	if (elf_checkoff(fn, fp, foff, (off_t)eh->e_phnum * eh->e_phentsize))
-		return NULL;
-
-	/* XXX we might as well induce some shnum&shentsize limits */
-	if ((shdr = calloc(eh->e_shnum, eh->e_shentsize)) == NULL) {
-		warn("calloc(%d, %d)", (int)eh->e_shnum, (int)eh->e_shentsize);
-		return (NULL);
-	}
-
-	if (fseeko(fp, foff + eh->e_shoff, SEEK_SET)) {
-		warn("%s: fseeko", fn);
-		free(shdr);
-		return (NULL);
-	}
-
-	if (fread(shdr, eh->e_shentsize, eh->e_shnum, fp) != eh->e_shnum) {
-		warnx("%s: premature EOF", fn);
-		free(shdr);
-		return (NULL);
-	}
-
-	return (shdr);
-}
-
-int
-elf_save_shdrs(const char *fn, FILE *fp, off_t foff, const Elf_Ehdr *eh,
-    const Elf_Shdr *shdr)
-{
-	if (fseeko(fp, foff + eh->e_shoff, SEEK_SET)) {
-		warn("%s: fseeko", fn);
-		return (1);
-	}
-
-	if (fwrite(shdr, eh->e_shentsize, eh->e_shnum, fp) != eh->e_shnum) {
-		warnx("%s: premature EOF", fn);
-		return (1);
-	}
-
-	return (0);
 }
 
 Elf_Phdr *
@@ -196,31 +144,6 @@ elf_save_phdrs(const char *fn, FILE *fp, off_t foff, const Elf_Ehdr *eh,
 	}
 
 	return (0);
-}
-
-int
-elf_fix_shdrs(const Elf_Ehdr *eh, Elf_Shdr *shdr)
-{
-	int i;
-
-	/* nothing to do */
-	if (eh->e_ident[EI_DATA] == ELF_TARG_DATA)
-		return (0);
-
-	for (i = eh->e_shnum; i--; shdr++) {
-		shdr->sh_name = swap32(shdr->sh_name);
-		shdr->sh_type = swap32(shdr->sh_type);
-		shdr->sh_flags = swap_xword(shdr->sh_flags);
-		shdr->sh_addr = swap_addr(shdr->sh_addr);
-		shdr->sh_offset = swap_off(shdr->sh_offset);
-		shdr->sh_size = swap_xword(shdr->sh_size);
-		shdr->sh_link = swap32(shdr->sh_link);
-		shdr->sh_info = swap32(shdr->sh_info);
-		shdr->sh_addralign = swap_xword(shdr->sh_addralign);
-		shdr->sh_entsize = swap_xword(shdr->sh_entsize);
-	}
-
-	return (1);
 }
 
 int
