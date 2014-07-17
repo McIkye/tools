@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf_shdrs.c,v 1.2 2014/07/16 14:41:41 mickey Exp $";
+    "$ABSD: elf_shdrs.c,v 1.3 2014/07/17 16:07:38 mickey Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -52,6 +52,7 @@ static const char rcsid[] =
 #define	elf_save_shdrs	elf32_save_shdrs
 #define	elf_scan_shdrs	elf32_scan_shdrs
 #define	elf_fix_shdrs	elf32_fix_shdrs
+#define	elf_fix_shdr	elf32_fix_shdr
 #elif ELFSIZE == 64
 #define	swap_addr	swap64
 #define	swap_off	swap64
@@ -70,6 +71,7 @@ static const char rcsid[] =
 #define	elf_save_shdrs	elf64_save_shdrs
 #define	elf_scan_shdrs	elf64_scan_shdrs
 #define	elf_fix_shdrs	elf64_fix_shdrs
+#define	elf_fix_shdr	elf64_fix_shdr
 #else
 #error "Unsupported ELF class"
 #endif
@@ -121,26 +123,32 @@ elf_save_shdrs(const char *fn, FILE *fp, off_t foff, const Elf_Ehdr *eh,
 }
 
 int
+elf_fix_shdr(Elf_Shdr *sh, const char *name)
+{
+	sh->sh_name = swap32(sh->sh_name);
+	sh->sh_type = swap32(sh->sh_type);
+	sh->sh_flags = swap_xword(sh->sh_flags);
+	sh->sh_addr = swap_addr(sh->sh_addr);
+	sh->sh_offset = swap_off(sh->sh_offset);
+	sh->sh_size = swap_xword(sh->sh_size);
+	sh->sh_link = swap32(sh->sh_link);
+	sh->sh_info = swap32(sh->sh_info);
+	sh->sh_addralign = swap_xword(sh->sh_addralign);
+	sh->sh_entsize = swap_xword(sh->sh_entsize);
+
+	return 1;
+}
+
+// XXX this shall be in elf.c
+
+int
 elf_fix_shdrs(const Elf_Ehdr *eh, Elf_Shdr *shdr)
 {
-	int i;
-
 	/* nothing to do */
 	if (eh->e_ident[EI_DATA] == ELF_TARG_DATA)
 		return (0);
 
-	for (i = eh->e_shnum; i--; shdr++) {
-		shdr->sh_name = swap32(shdr->sh_name);
-		shdr->sh_type = swap32(shdr->sh_type);
-		shdr->sh_flags = swap_xword(shdr->sh_flags);
-		shdr->sh_addr = swap_addr(shdr->sh_addr);
-		shdr->sh_offset = swap_off(shdr->sh_offset);
-		shdr->sh_size = swap_xword(shdr->sh_size);
-		shdr->sh_link = swap32(shdr->sh_link);
-		shdr->sh_info = swap32(shdr->sh_info);
-		shdr->sh_addralign = swap_xword(shdr->sh_addralign);
-		shdr->sh_entsize = swap_xword(shdr->sh_entsize);
-	}
+	elf_scan_shdrs(eh, shdr, NULL, &elf_fix_shdr);
 
 	return (1);
 }
