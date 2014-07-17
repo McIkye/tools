@@ -42,7 +42,7 @@ static const char copyright[] =
 #if 0
 static const char sccsid[] = "@(#)nm.c	8.1 (Berkeley) 6/6/93";
 #else
-static const char rcsid[] = "$ABSD: nm.c,v 1.19 2014/06/13 16:19:52 mickey Exp $";
+static const char rcsid[] = "$ABSD: nm.c,v 1.20 2014/07/17 16:05:19 mickey Exp $";
 #endif
 #endif
 
@@ -719,8 +719,6 @@ show_file(int count, int warn_fmt, const char *name, FILE *fp, off_t foff, union
 	if (!elf32_chk_header(&head->elf32)) {
 		struct elf_symtab es;
 
-		elf32_fix_header(&head->elf32);
-
 		es.name = name;
 		es.ehdr = &head->elf32;
 		if (head->elf32.e_ehsize < sizeof head->elf32) {
@@ -749,8 +747,6 @@ show_file(int count, int warn_fmt, const char *name, FILE *fp, off_t foff, union
 
 	} else if (!elf64_chk_header(&head->elf64)) {
 		struct elf_symtab es;
-
-		elf64_fix_header(&head->elf64);
 
 		es.name = name;
 		es.ehdr = &head->elf64;
