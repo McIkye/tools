@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf_header.c,v 1.1 2012/06/15 01:52:57 mickey Exp $";
+    "$ABSD: elf_header.c,v 1.2 2014/07/17 16:03:55 mickey Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -84,9 +84,10 @@ elf_chk_header(Elf_Ehdr *eh)
 	    (eh->e_type >= ET_NUM && ET_LOOS > eh->e_type) ||
 	    (eh->e_phentsize && eh->e_phentsize < sizeof(Elf_Phdr)) ||
 	    eh->e_shentsize < sizeof(Elf_Shdr) ||
-	    eh->e_shstrndx > eh->e_shnum)
+	    eh->e_shstrndx > eh->e_shnum) {
+		elf_fix_header(eh);
 		return -1;
-
+	}
 
 	return 0;
 }
