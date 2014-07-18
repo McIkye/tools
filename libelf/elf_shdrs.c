@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf_shdrs.c,v 1.3 2014/07/17 16:07:38 mickey Exp $";
+    "$ABSD: elf_shdrs.c,v 1.4 2014/07/18 12:16:04 mickey Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -53,6 +53,7 @@ static const char rcsid[] =
 #define	elf_scan_shdrs	elf32_scan_shdrs
 #define	elf_fix_shdrs	elf32_fix_shdrs
 #define	elf_fix_shdr	elf32_fix_shdr
+#define	elf_shstrload	elf32_shstrload
 #elif ELFSIZE == 64
 #define	swap_addr	swap64
 #define	swap_off	swap64
@@ -72,6 +73,7 @@ static const char rcsid[] =
 #define	elf_scan_shdrs	elf64_scan_shdrs
 #define	elf_fix_shdrs	elf64_fix_shdrs
 #define	elf_fix_shdr	elf64_fix_shdr
+#define	elf_shstrload	elf64_shstrload
 #else
 #error "Unsupported ELF class"
 #endif
@@ -167,4 +169,44 @@ elf_scan_shdrs(const Elf_Ehdr *eh, Elf_Shdr *shdr, const char *shstr,
 			return shdr;
 
 	return NULL;
+}
+
+char *
+elf_shstrload(const char *fn, FILE *fp, off_t foff, const Elf_Ehdr *eh,
+    const Elf_Shdr *shdr)
+{
+	size_t shstrsize;
+	char *shstr;
+
+	if (!eh->e_shstrndx || eh->e_shstrndx >= eh->e_shnum) {
+		warnx("%s: invalid ELF header", fn);
+		return NULL;
+	}
+	shdr = (const Elf_Shdr *)((const char *)shdr +
+	    eh->e_shstrndx * eh->e_shentsize);
+
+	shstrsize = shdr->sh_size;
+	if (shstrsize == 0) {
+		warnx("%s: no section name list", fn);
+		return (NULL);
+	}
+
+	if ((shstr = malloc(shstrsize)) == NULL) {
+		warn("malloc(%d)", (int)shstrsize);
+		return (NULL);
+	}
+
+	if (fseeko(fp, foff + shdr->sh_offset, SEEK_SET)) {
+		warn("%s: fseeko", fn);
+		free(shstr);
+		return (NULL);
+	}
+
+	if (fread(shstr, shstrsize, 1, fp) != 1) {
+		warnx("%s: premature EOF", fn);
+		free(shstr);
+		return (NULL);
+	}
+
+	return shstr;
 }

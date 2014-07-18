@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf.c,v 1.34 2014/07/17 15:42:09 mickey Exp $";
+    "$ABSD: elf.c,v 1.35 2014/07/18 12:16:04 mickey Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -283,42 +283,4 @@ elf_fix_rela(Elf_Ehdr *eh, Elf_RelA *rela)
 	rela->r_addend = swap_sxword(rela->r_addend);
 
 	return (1);
-}
-
-char *
-elf_shstrload(const char *fn, FILE *fp, off_t foff, const Elf_Ehdr *eh,
-    const Elf_Shdr *shdr)
-{
-	size_t shstrsize;
-	char *shstr;
-
-	if (!eh->e_shstrndx || eh->e_shstrndx >= eh->e_shnum) {
-		warnx("%s: invalid header", fn);
-		return NULL;
-	}
-
-	shstrsize = shdr[eh->e_shstrndx].sh_size;
-	if (shstrsize == 0) {
-		warnx("%s: no section name list", fn);
-		return (NULL);
-	}
-
-	if ((shstr = malloc(shstrsize)) == NULL) {
-		warn("malloc(%d)", (int)shstrsize);
-		return (NULL);
-	}
-
-	if (fseeko(fp, foff + shdr[eh->e_shstrndx].sh_offset, SEEK_SET)) {
-		warn("%s: fseeko", fn);
-		free(shstr);
-		return (NULL);
-	}
-
-	if (fread(shstr, shstrsize, 1, fp) != 1) {
-		warnx("%s: premature EOF", fn);
-		free(shstr);
-		return (NULL);
-	}
-
-	return shstr;
 }
