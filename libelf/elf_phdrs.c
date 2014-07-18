@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003-2011 Michael Shalayeff
+ * Copyright (c) 2003-2014 Michael Shalayeff
  * All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf_phdrs.c,v 1.1 2014/07/17 15:42:09 mickey Exp $";
+    "$ABSD: elf_phdrs.c,v 1.2 2014/07/18 12:37:52 mickey Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -32,45 +32,7 @@ static const char rcsid[] =
 #include <a.out.h>
 #include <elf_abi.h>
 #include "elfuncs.h"
-
-#ifdef __FreeBSD__
-#define swap16	bswap16
-#define swap32	bswap32
-#define swap64	bswap64
-#endif
-
-#if ELFSIZE == 32
-#define	swap_addr	swap32
-#define	swap_off	swap32
-#define	swap_sword	swap32
-#define	swap_word	swap32
-#define	swap_sxword	swap32
-#define	swap_xword	swap32
-#define	swap_half	swap16
-#define	swap_quarter	swap16
-#define	elf_load_phdrs	elf32_load_phdrs
-#define	elf_save_phdrs	elf32_save_phdrs
-#define	elf_fix_phdrs	elf32_fix_phdrs
-#elif ELFSIZE == 64
-#define	swap_addr	swap64
-#define	swap_off	swap64
-#ifdef __alpha__
-#define	swap_sword	swap64
-#define	swap_word	swap64
-#else
-#define	swap_sword	swap32
-#define	swap_word	swap32
-#endif
-#define	swap_sxword	swap64
-#define	swap_xword	swap64
-#define	swap_half	swap32
-#define	swap_quarter	swap16
-#define	elf_load_phdrs	elf64_load_phdrs
-#define	elf_save_phdrs	elf64_save_phdrs
-#define	elf_fix_phdrs	elf64_fix_phdrs
-#else
-#error "Unsupported ELF class"
-#endif
+#include "elfswap.h"
 
 Elf_Phdr *
 elf_load_phdrs(const char *fn, FILE *fp, off_t foff, const Elf_Ehdr *eh)

@@ -17,20 +17,13 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf_size.c,v 1.1 2012/06/15 01:52:57 mickey Exp $";
+    "$ABSD: elf_size.c,v 1.2 2014/07/18 12:37:52 mickey Exp $";
 #endif /* not lint */
 
 #include <stdio.h>
 #include <elf_abi.h>
 #include "elfuncs.h"
-
-#if ELFSIZE == 32
-#define	elf_size	elf32_size
-#elif ELFSIZE == 64
-#define	elf_size	elf64_size
-#else
-#error "Unsupported ELF class"
-#endif
+#include "elfswap.h"
 
 int
 elf_size(const Elf_Ehdr *eh, const Elf_Shdr *shdr,

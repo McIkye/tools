@@ -17,35 +17,14 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf_header.c,v 1.2 2014/07/17 16:03:55 mickey Exp $";
+    "$ABSD: elf_header.c,v 1.3 2014/07/18 12:37:52 mickey Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <stdio.h>
 #include <elf_abi.h>
 #include "elfuncs.h"
-
-#ifdef __FreeBSD__
-#define swap16	bswap16
-#define swap32	bswap32
-#define swap64	bswap64
-#endif
-
-#if ELFSIZE == 32
-#define	ELFCLASS	ELFCLASS32
-#define	swap_addr	swap32
-#define	swap_off	swap32
-#define	elf_fix_header	elf32_fix_header
-#define	elf_chk_header	elf32_chk_header
-#elif ELFSIZE == 64
-#define	ELFCLASS	ELFCLASS64
-#define	swap_addr	swap64
-#define	swap_off	swap64
-#define	elf_fix_header	elf64_fix_header
-#define	elf_chk_header	elf64_chk_header
-#else
-#error "Unsupported ELF class"
-#endif
+#include "elfswap.h"
 
 int
 elf_fix_header(Elf_Ehdr *eh)

@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf_shdrs.c,v 1.4 2014/07/18 12:16:04 mickey Exp $";
+    "$ABSD: elf_shdrs.c,v 1.5 2014/07/18 12:37:52 mickey Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -32,51 +32,7 @@ static const char rcsid[] =
 #include <a.out.h>
 #include <elf_abi.h>
 #include "elfuncs.h"
-
-#ifdef __FreeBSD__
-#define swap16	bswap16
-#define swap32	bswap32
-#define swap64	bswap64
-#endif
-
-#if ELFSIZE == 32
-#define	swap_addr	swap32
-#define	swap_off	swap32
-#define	swap_sword	swap32
-#define	swap_word	swap32
-#define	swap_sxword	swap32
-#define	swap_xword	swap32
-#define	swap_half	swap16
-#define	swap_quarter	swap16
-#define	elf_load_shdrs	elf32_load_shdrs
-#define	elf_save_shdrs	elf32_save_shdrs
-#define	elf_scan_shdrs	elf32_scan_shdrs
-#define	elf_fix_shdrs	elf32_fix_shdrs
-#define	elf_fix_shdr	elf32_fix_shdr
-#define	elf_shstrload	elf32_shstrload
-#elif ELFSIZE == 64
-#define	swap_addr	swap64
-#define	swap_off	swap64
-#ifdef __alpha__
-#define	swap_sword	swap64
-#define	swap_word	swap64
-#else
-#define	swap_sword	swap32
-#define	swap_word	swap32
-#endif
-#define	swap_sxword	swap64
-#define	swap_xword	swap64
-#define	swap_half	swap32
-#define	swap_quarter	swap16
-#define	elf_load_shdrs	elf64_load_shdrs
-#define	elf_save_shdrs	elf64_save_shdrs
-#define	elf_scan_shdrs	elf64_scan_shdrs
-#define	elf_fix_shdrs	elf64_fix_shdrs
-#define	elf_fix_shdr	elf64_fix_shdr
-#define	elf_shstrload	elf64_shstrload
-#else
-#error "Unsupported ELF class"
-#endif
+#include "elfswap.h"
 
 Elf_Shdr *
 elf_load_shdrs(const char *fn, FILE *fp, off_t foff, const Elf_Ehdr *eh)
