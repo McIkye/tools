@@ -75,7 +75,7 @@ int	elf32_fix_rela(Elf32_Ehdr *, Elf32_Rela *);
 int	elf32_fix_sym(const Elf32_Ehdr *eh, Elf32_Sym *sym);
 int	elf32_2nlist(Elf32_Sym *, const Elf32_Ehdr *, const Elf32_Shdr *,
 	    const char *, struct nlist *);
-int	elf32_size(const Elf32_Ehdr *, const Elf32_Shdr *,
+int	elf32_size(const Elf32_Ehdr *, Elf32_Shdr *,
 	    u_long *, u_long *, u_long *);
 char	*elf32_shstrload(const char *, FILE *, off_t, const Elf32_Ehdr *,
 	    const Elf32_Shdr *shdr);
@@ -102,7 +102,7 @@ int	elf64_fix_rel(Elf64_Ehdr *, Elf64_Rel *);
 int	elf64_fix_rela(Elf64_Ehdr *, Elf64_Rela *);
 int	elf64_2nlist(Elf64_Sym *, const Elf64_Ehdr *, const Elf64_Shdr *,
 	    const char *, struct nlist *);
-int	elf64_size(const Elf64_Ehdr *, const Elf64_Shdr *,
+int	elf64_size(const Elf64_Ehdr *, Elf64_Shdr *,
 	    u_long *, u_long *, u_long *);
 char	*elf64_shstrload(const char *, FILE *, off_t, const Elf64_Ehdr *,
 	    const Elf64_Shdr *shdr);

@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf_size.c,v 1.2 2014/07/18 12:37:52 mickey Exp $";
+    "$ABSD: elf_size.c,v 1.3 2014/07/18 13:45:36 mickey Exp $";
 #endif /* not lint */
 
 #include <stdio.h>
@@ -25,25 +25,38 @@ static const char rcsid[] =
 #include "elfuncs.h"
 #include "elfswap.h"
 
+struct elf_size {
+	u_long text, data, bss;
+};
+
 int
-elf_size(const Elf_Ehdr *eh, const Elf_Shdr *shdr,
+elf_size_add(Elf_Shdr *sh, const char *name, void *v)
+{
+	struct elf_size *es = v;
+
+	if (!(sh->sh_flags & SHF_ALLOC))
+		return 1;
+	else if (sh->sh_flags & SHF_EXECINSTR ||
+	    !(sh->sh_flags & SHF_WRITE))
+		es->text += (u_long)sh->sh_size;
+	else if (sh->sh_type == SHT_NOBITS)
+		es->bss += (u_long)sh->sh_size;
+	else
+		es->data += (u_long)sh->sh_size;
+
+	return 1;
+}
+
+int
+elf_size(const Elf_Ehdr *eh, Elf_Shdr *shdr,
     u_long *ptext, u_long *pdata, u_long *pbss)
 {
-	int i;
+	struct elf_size es = { 0, 0, 0 };
 
-	*ptext = *pdata = *pbss = 0;
+	elf_scan_shdrs(eh, shdr, NULL, elf_size_add, &es);
 
-	for (i = 0; i < eh->e_shnum; i++) {
-		if (!(shdr[i].sh_flags & SHF_ALLOC))
-			continue;
-		else if (shdr[i].sh_flags & SHF_EXECINSTR ||
-		    !(shdr[i].sh_flags & SHF_WRITE))
-			*ptext += (u_long)shdr[i].sh_size;
-		else if (shdr[i].sh_type == SHT_NOBITS)
-			*pbss += (u_long)shdr[i].sh_size;
-		else
-			*pdata += (u_long)shdr[i].sh_size;
-	}
-
+	*ptext = es.text;
+	*pdata = es.data;
+	*pbss = es.bss;
 	return (0);
 }
