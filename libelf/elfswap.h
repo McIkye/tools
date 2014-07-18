@@ -38,7 +38,7 @@
 #define	elf_scan_shdrs	elf32_scan_shdrs
 #define	elf_shstrload	elf32_shstrload
 #define	elf_dwarfnebula	elf32_dwarfnebula
-#define elf_lines_cmp	elf32_lines_cmp
+#define	elf_lines_cmp	elf32_lines_cmp
 #define	elf_fix_header	elf32_fix_header
 #define	elf_chk_header	elf32_chk_header
 #define	elf_load_phdrs	elf32_load_phdrs
@@ -60,6 +60,9 @@
 #define	elf_symloadx	elf32_symloadx
 #define	elf_symload	elf32_symload
 #define	elf_size	elf32_size
+#define	elf_fix_note	elf32_fix_note
+#define	elf_fix_rel	elf32_fix_rel
+#define	elf_fix_rela	elf32_fix_rela
 #elif ELFSIZE == 64
 #define	swap_addr	swap64
 #define	swap_off	swap64
@@ -104,6 +107,9 @@
 #define	elf_symloadx	elf64_symloadx
 #define	elf_symload	elf64_symload
 #define	elf_size	elf64_size
+#define	elf_fix_note	elf64_fix_note
+#define	elf_fix_rel	elf64_fix_rel
+#define	elf_fix_rela	elf64_fix_rela
 #else
 #error "Unsupported ELF class"
 #endif
