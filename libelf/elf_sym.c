@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003-2011 Michael Shalayeff
+ * Copyright (c) 2003-2014 Michael Shalayeff
  * All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf_sym.c,v 1.1 2014/07/18 12:37:52 mickey Exp $";
+    "$ABSD: elf_sym.c,v 1.2 2014/07/18 13:30:44 mickey Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>

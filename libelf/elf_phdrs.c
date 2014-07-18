@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf_phdrs.c,v 1.3 2014/07/18 13:01:13 mickey Exp $";
+    "$ABSD: elf_phdrs.c,v 1.4 2014/07/18 13:30:44 mickey Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -81,7 +81,7 @@ elf_save_phdrs(const char *fn, FILE *fp, off_t foff, const Elf_Ehdr *eh,
 }
 
 int
-elf_fix_phdr(Elf_Phdr *ph)
+elf_fix_phdr(Elf_Phdr *ph, void *v)
 {
 	ph->p_type = swap32(ph->p_type);
 	ph->p_flags = swap32(ph->p_flags);
@@ -102,14 +102,14 @@ elf_fix_phdrs(const Elf_Ehdr *eh, Elf_Phdr *phdr)
 	if (eh->e_ident[EI_DATA] == ELF_TARG_DATA)
 		return (0);
 
-	elf_scan_phdrs(eh, phdr, elf_fix_phdr);
+	elf_scan_phdrs(eh, phdr, elf_fix_phdr, NULL);
 
 	return (1);
 }
 
 
 Elf_Phdr *
-elf_scan_phdrs(const Elf_Ehdr *eh, Elf_Phdr *phdr, int (*fn)(Elf_Phdr *))
+elf_scan_phdrs(const Elf_Ehdr *eh, Elf_Phdr *phdr, int (*fn)(Elf_Phdr *, void *), void *v)
 {
 	Elf_Phdr *eph;
 	int i;
@@ -117,7 +117,7 @@ elf_scan_phdrs(const Elf_Ehdr *eh, Elf_Phdr *phdr, int (*fn)(Elf_Phdr *))
 	eph = (Elf_Phdr *)((char *)phdr + eh->e_phnum * eh->e_phentsize);
 	for (i = 0; phdr < eph; i++,
 	    phdr = (Elf_Phdr *)((char *)phdr + eh->e_phentsize))
-		if (!(*fn)(phdr))
+		if (!(*fn)(phdr, v))
 			return phdr;
 
 	return NULL;

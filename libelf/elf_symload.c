@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf_symload.c,v 1.2 2014/07/18 12:37:52 mickey Exp $";
+    "$ABSD: elf_symload.c,v 1.3 2014/07/18 13:30:44 mickey Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -33,35 +33,47 @@ static const char rcsid[] =
 int elf_symloadx(struct elf_symtab *es, FILE *fp, off_t foff,
     int (*func)(struct elf_symtab *, int, void *, void *), void *arg,
     const char *, const char *);
+char *elf_strload(const char *fn, FILE *fp, off_t foff, const Elf_Ehdr *eh,
+    Elf_Shdr *shdr, const char *shstr, const char *strtab,
+    size_t *pstabsize);
+
+struct elf_stab_cmp {
+	const char *name;
+};
+
+int
+elf_stab_cmp(Elf_Shdr *sh, const char *name, void *v)
+{
+	struct elf_stab_cmp *n = v;
+
+	return strcmp(name, n->name);
+}
 
 char *
 elf_strload(const char *fn, FILE *fp, off_t foff, const Elf_Ehdr *eh,
-    const Elf_Shdr *shdr, const char *shstr, const char *strtab,
+    Elf_Shdr *shdr, const char *shstr, const char *strtab,
     size_t *pstabsize)
 {
+	struct elf_stab_cmp n;
 	char *ret = NULL;
-	int i;
 
-	for (i = 1; i < eh->e_shnum; i++) {
-		if (shdr[i].sh_type == SHT_STRTAB &&
-		    !strcmp(shstr + shdr[i].sh_name, strtab)) {
-			*pstabsize = shdr[i].sh_size;
-			if (*pstabsize > SIZE_T_MAX) {
-				warnx("%s: corrupt file", fn);
-				return (NULL);
-			}
+	n.name = strtab;
+	if (!(shdr = elf_scan_shdrs(eh, shdr, shstr, elf_stab_cmp, &n)))
+		return NULL;
 
-			if ((ret = malloc(*pstabsize)) == NULL) {
-				warn("malloc(%d)", (int)*pstabsize);
-				break;
-			} else if (pread(fileno(fp), ret, *pstabsize,
-			    foff + shdr[i].sh_offset) != *pstabsize) {
-				warn("pread: %s", fn);
-				free(ret);
-				ret = NULL;
-				break;
-			}
-		}
+	*pstabsize = shdr->sh_size;
+	if (*pstabsize > SIZE_T_MAX) {
+		warnx("%s: corrupt file", fn);
+		return (NULL);
+	}
+
+	if ((ret = malloc(*pstabsize)) == NULL)
+		warn("malloc(%zd)", *pstabsize);
+	else if (pread(fileno(fp), ret, *pstabsize,
+	    foff + shdr->sh_offset) != *pstabsize) {
+		warn("pread: %s", fn);
+		free(ret);
+		ret = NULL;
 	}
 
 	return ret;
@@ -73,49 +85,50 @@ elf_symloadx(struct elf_symtab *es, FILE *fp, off_t foff,
     const char *strtab, const char *symtab)
 {
 	const Elf_Ehdr *eh = es->ehdr;
-	const Elf_Shdr *shdr = es->shdr;
+	Elf_Shdr *shdr = es->shdr;
+	struct elf_stab_cmp n;
 	size_t symsize;
 	Elf_Sym sbuf;
-	int i, is;
+	int is;
 
 	if (!(es->stab = elf_strload(es->name, fp, foff, eh, shdr, es->shstr,
 	    strtab, &es->stabsz)))
 		return (1);
 
-	for (i = 0; i < eh->e_shnum; shdr++, i++) {
-		if (!strcmp(es->shstr + shdr->sh_name, symtab)) {
-			if (shdr->sh_entsize < sizeof sbuf) {
-				warn("%s: invalid symtab section", es->name);
-				return (1);
-			}
+	n.name = symtab;
+	if (!(shdr = elf_scan_shdrs(eh, shdr, es->shstr, elf_stab_cmp, &n)))
+		return (1);
 
-			symsize = shdr->sh_size;
-			if (fseeko(fp, foff + shdr->sh_offset, SEEK_SET)) {
-				warn("%s: fseeko", es->name);
-				return (1);
-			}
+	if (shdr->sh_entsize < sizeof sbuf) {
+		warn("%s: invalid symtab section", es->name);
+		return (1);
+	}
 
-			es->nsyms = symsize / shdr->sh_entsize;
-			for (is = 0; is < es->nsyms; is++) {
-				if (fread(&sbuf, sizeof sbuf, 1, fp) != 1) {
-					warn("%s: read symbol", es->name);
-					return (1);
-				}
-				if (shdr->sh_entsize > sizeof sbuf &&
-				    fseeko(fp, shdr->sh_entsize - sizeof sbuf,
-				    SEEK_CUR)) {
-					warn("%s: fseeko", es->name);
-					return (1);
-				}
+	symsize = shdr->sh_size;
+	if (fseeko(fp, foff + shdr->sh_offset, SEEK_SET)) {
+		warn("%s: fseeko", es->name);
+		return (1);
+	}
 
-				elf_fix_sym(eh, &sbuf);
-				if (sbuf.st_name >= es->stabsz)
-					continue;
-
-				if ((*func)(es, is, &sbuf, arg))
-					return 1;
-			}
+	es->nsyms = symsize / shdr->sh_entsize;
+	for (is = 0; is < es->nsyms; is++) {
+		if (fread(&sbuf, sizeof sbuf, 1, fp) != 1) {
+			warn("%s: read symbol", es->name);
+			return (1);
 		}
+		if (shdr->sh_entsize > sizeof sbuf &&
+		    fseeko(fp, shdr->sh_entsize - sizeof sbuf,
+		    SEEK_CUR)) {
+			warn("%s: fseeko", es->name);
+			return (1);
+		}
+
+		elf_fix_sym(eh, &sbuf);
+		if (sbuf.st_name >= es->stabsz)
+			continue;
+
+		if ((*func)(es, is, &sbuf, arg))
+			return 1;
 	}
 
 	return (0);

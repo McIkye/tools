@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf_shdrs.c,v 1.6 2014/07/18 13:01:13 mickey Exp $";
+    "$ABSD: elf_shdrs.c,v 1.7 2014/07/18 13:30:44 mickey Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -81,7 +81,7 @@ elf_save_shdrs(const char *fn, FILE *fp, off_t foff, const Elf_Ehdr *eh,
 }
 
 int
-elf_fix_shdr(Elf_Shdr *sh, const char *name)
+elf_fix_shdr(Elf_Shdr *sh, const char *name, void *v)
 {
 	sh->sh_name = swap32(sh->sh_name);
 	sh->sh_type = swap32(sh->sh_type);
@@ -104,14 +104,14 @@ elf_fix_shdrs(const Elf_Ehdr *eh, Elf_Shdr *shdr)
 	if (eh->e_ident[EI_DATA] == ELF_TARG_DATA)
 		return (0);
 
-	elf_scan_shdrs(eh, shdr, NULL, &elf_fix_shdr);
+	elf_scan_shdrs(eh, shdr, NULL, &elf_fix_shdr, NULL);
 
 	return (1);
 }
 
 Elf_Shdr *
 elf_scan_shdrs(const Elf_Ehdr *eh, Elf_Shdr *shdr, const char *shstr,
-    int (*fn)(Elf_Shdr *, const char *))
+    int (*fn)(Elf_Shdr *, const char *, void *), void *v)
 {
 	Elf_Shdr *esh;
 	int i;
@@ -119,7 +119,7 @@ elf_scan_shdrs(const Elf_Ehdr *eh, Elf_Shdr *shdr, const char *shstr,
 	esh = (Elf_Shdr *)((char *)shdr + eh->e_shnum * eh->e_shentsize);
 	for (i = 0; shdr < esh; i++,
 	    shdr = (Elf_Shdr *)((char *)shdr + eh->e_shentsize))
-		if (!(*fn)(shdr, shstr + shdr->sh_name))
+		if (!(*fn)(shdr, shstr + shdr->sh_name, v))
 			return shdr;
 
 	return NULL;

@@ -55,6 +55,7 @@
 #define	elf_strload	elf32_strload
 #define	elf_symloadx	elf32_symloadx
 #define	elf_symload	elf32_symload
+#define	elf_stab_cmp	elf32_stab_cmp
 #define	elf_size	elf32_size
 #define	elf_fix_note	elf32_fix_note
 #define	elf_fix_rel	elf32_fix_rel
@@ -98,6 +99,7 @@
 #define	elf_strload	elf64_strload
 #define	elf_symloadx	elf64_symloadx
 #define	elf_symload	elf64_symload
+#define	elf_stab_cmp	elf64_stab_cmp
 #define	elf_size	elf64_size
 #define	elf_fix_note	elf64_fix_note
 #define	elf_fix_rel	elf64_fix_rel
