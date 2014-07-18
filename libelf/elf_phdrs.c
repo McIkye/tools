@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf_phdrs.c,v 1.2 2014/07/18 12:37:52 mickey Exp $";
+    "$ABSD: elf_phdrs.c,v 1.3 2014/07/18 13:01:13 mickey Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -81,24 +81,44 @@ elf_save_phdrs(const char *fn, FILE *fp, off_t foff, const Elf_Ehdr *eh,
 }
 
 int
+elf_fix_phdr(Elf_Phdr *ph)
+{
+	ph->p_type = swap32(ph->p_type);
+	ph->p_flags = swap32(ph->p_flags);
+	ph->p_offset = swap_off(ph->p_offset);
+	ph->p_vaddr = swap_addr(ph->p_vaddr);
+	ph->p_paddr = swap_addr(ph->p_paddr);
+	ph->p_filesz = swap_xword(ph->p_filesz);
+	ph->p_memsz = swap_xword(ph->p_memsz);
+	ph->p_align = swap_xword(ph->p_align);
+
+	return 1;
+}
+
+int
 elf_fix_phdrs(const Elf_Ehdr *eh, Elf_Phdr *phdr)
 {
-	int i;
-
 	/* nothing to do */
 	if (eh->e_ident[EI_DATA] == ELF_TARG_DATA)
 		return (0);
 
-	for (i = eh->e_phnum; i--; phdr++) {
-		phdr->p_type = swap32(phdr->p_type);
-		phdr->p_flags = swap32(phdr->p_flags);
-		phdr->p_offset = swap_off(phdr->p_offset);
-		phdr->p_vaddr = swap_addr(phdr->p_vaddr);
-		phdr->p_paddr = swap_addr(phdr->p_paddr);
-		phdr->p_filesz = swap_xword(phdr->p_filesz);
-		phdr->p_memsz = swap_xword(phdr->p_memsz);
-		phdr->p_align = swap_xword(phdr->p_align);
-	}
+	elf_scan_phdrs(eh, phdr, elf_fix_phdr);
 
 	return (1);
+}
+
+
+Elf_Phdr *
+elf_scan_phdrs(const Elf_Ehdr *eh, Elf_Phdr *phdr, int (*fn)(Elf_Phdr *))
+{
+	Elf_Phdr *eph;
+	int i;
+
+	eph = (Elf_Phdr *)((char *)phdr + eh->e_phnum * eh->e_phentsize);
+	for (i = 0; phdr < eph; i++,
+	    phdr = (Elf_Phdr *)((char *)phdr + eh->e_phentsize))
+		if (!(*fn)(phdr))
+			return phdr;
+
+	return NULL;
 }

@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf_shdrs.c,v 1.5 2014/07/18 12:37:52 mickey Exp $";
+    "$ABSD: elf_shdrs.c,v 1.6 2014/07/18 13:01:13 mickey Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -96,8 +96,6 @@ elf_fix_shdr(Elf_Shdr *sh, const char *name)
 
 	return 1;
 }
-
-// XXX this shall be in elf.c
 
 int
 elf_fix_shdrs(const Elf_Ehdr *eh, Elf_Shdr *shdr)
