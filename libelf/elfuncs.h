@@ -38,19 +38,25 @@ struct elf_symtab {
 };
 
 /* flags for elf_dwarfnebulas */
-#define	ELF_DWARF_LINES	0x01
-#define	ELF_DWARF_SYMS	0x02
+#define	ELF_DWARF_ADDRS	0x01
+#define	ELF_DWARF_LINES	0x02
+#define	ELF_DWARF_NAMES	0x04
+#define	ELF_DWARF_TYPES	0x08
 
 struct dwarf_nebula {
 	const char *name;	/* objname */
-	const void *ehdr;	/* file header */
 
-	void	*lines;		/* line numbers info */
+	void	*info;		/* .debug_info */
+	size_t	ninfo;		/* size of the debugging info */
+	void	*lines;		/* .debug_lines */
 	size_t	nlines;		/* size of the line numbers info */
-	void	*symtab;	/* symtab if needed */
-	char	*stab;		/* strings table for the syms */
-	size_t	stabsz;		/* strings size */
-	u_long	nsyms;		/* number of symbols in the table */
+	void	*addrs;		/* .debug_aranges */
+	size_t	naddrs;		/* size of the addr ranges info */
+	void	*names;		/* .debug_pubnames */
+	size_t	nnames;		/* size of the pub names info */
+
+	/* misc */
+	unsigned char elfdata;	/* cached EI_DATA */
 };
 
 int	elf_checkoff(const char *, FILE *, off_t, off_t);
@@ -77,6 +83,7 @@ int	elf32_2nlist(Elf32_Sym *, const Elf32_Ehdr *, const Elf32_Shdr *,
 	    const char *, struct nlist *);
 int	elf32_size(const Elf32_Ehdr *, Elf32_Shdr *,
 	    u_long *, u_long *, u_long *);
+char	*elf32_sld(const char *, FILE *, off_t, const Elf32_Shdr *shdr);
 char	*elf32_shstrload(const char *, FILE *, off_t, const Elf32_Ehdr *,
 	    const Elf32_Shdr *shdr);
 int	elf32_symload(struct elf_symtab *, FILE *, off_t,
@@ -104,16 +111,18 @@ int	elf64_2nlist(Elf64_Sym *, const Elf64_Ehdr *, const Elf64_Shdr *,
 	    const char *, struct nlist *);
 int	elf64_size(const Elf64_Ehdr *, Elf64_Shdr *,
 	    u_long *, u_long *, u_long *);
+char	*elf64_sld(const char *, FILE *, off_t, const Elf64_Shdr *shdr);
 char	*elf64_shstrload(const char *, FILE *, off_t, const Elf64_Ehdr *,
 	    const Elf64_Shdr *shdr);
 int	elf64_symload(struct elf_symtab *, FILE *, off_t,
 	    int (*func)(struct elf_symtab *, int, void *, void *), void *arg);
 
 struct dwarf_nebula *
-	elf32_dwarfnebula(const Elf32_Ehdr*, const char*, FILE *, int);
+	elf32_dwarfnebula(const char*, FILE *, off_t, const Elf32_Ehdr*, int);
 struct dwarf_nebula *
-	elf64_dwarfnebula(const Elf64_Ehdr*, const char*, FILE *, int);
-int	dwarf_addr2line(long long, struct dwarf_nebula *,
-	    const char **, const char **, const char **, int *);
+	elf64_dwarfnebula(const char*, FILE *, off_t, const Elf64_Ehdr*, int);
+int	dwarf_addr2line(uint64_t, struct dwarf_nebula *,
+	    const char **, const char **, int *);
+int	dwarf_addr2name(uint64_t, struct dwarf_nebula *, const char **, int *);
 
 #endif /* _LIBELF_H_ */

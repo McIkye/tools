@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf_shdrs.c,v 1.7 2014/07/18 13:30:44 mickey Exp $";
+    "$ABSD: elf_shdrs.c,v 1.8 2014/07/21 13:57:53 mickey Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -129,9 +129,6 @@ char *
 elf_shstrload(const char *fn, FILE *fp, off_t foff, const Elf_Ehdr *eh,
     const Elf_Shdr *shdr)
 {
-	size_t shstrsize;
-	char *shstr;
-
 	if (!eh->e_shstrndx || eh->e_shstrndx >= eh->e_shnum) {
 		warnx("%s: invalid ELF header", fn);
 		return NULL;
@@ -139,28 +136,37 @@ elf_shstrload(const char *fn, FILE *fp, off_t foff, const Elf_Ehdr *eh,
 	shdr = (const Elf_Shdr *)((const char *)shdr +
 	    eh->e_shstrndx * eh->e_shentsize);
 
-	shstrsize = shdr->sh_size;
-	if (shstrsize == 0) {
+	return elf_sld(fn, fp, foff, shdr);
+}
+
+char *
+elf_sld(const char *fn, FILE *fp, off_t foff, const Elf_Shdr *shdr)
+{
+	size_t shsize;
+	char *sld;
+
+	if (shdr->sh_size == 0 || shdr->sh_size > SSIZE_MAX) {
 		warnx("%s: no section name list", fn);
 		return (NULL);
 	}
 
-	if ((shstr = malloc(shstrsize)) == NULL) {
-		warn("malloc(%d)", (int)shstrsize);
+	shsize = shdr->sh_size;
+	if ((sld = malloc(shsize)) == NULL) {
+		warn("malloc(%zd)", shsize);
 		return (NULL);
 	}
 
 	if (fseeko(fp, foff + shdr->sh_offset, SEEK_SET)) {
 		warn("%s: fseeko", fn);
-		free(shstr);
+		free(sld);
 		return (NULL);
 	}
 
-	if (fread(shstr, shstrsize, 1, fp) != 1) {
+	if (fread(sld, shsize, 1, fp) != 1) {
 		warnx("%s: premature EOF", fn);
-		free(shstr);
+		free(sld);
 		return (NULL);
 	}
 
-	return shstr;
+	return sld;
 }

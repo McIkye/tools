@@ -51,6 +51,7 @@
 #define	elf2nlist	elf32_2nlist
 #define	elf_shn2type	elf32_shn2type
 #define	elf_load_shdrs	elf32_load_shdrs
+#define	elf_sld		elf32_sld
 #define	elf_shstrload	elf32_shstrload
 #define	elf_strload	elf32_strload
 #define	elf_symloadx	elf32_symloadx
@@ -96,6 +97,7 @@
 #define	elf2nlist	elf64_2nlist
 #define	elf_shn2type	elf64_shn2type
 #define	elf_load_shdrs	elf64_load_shdrs
+#define	elf_sld		elf64_sld
 #define	elf_shstrload	elf64_shstrload
 #define	elf_strload	elf64_strload
 #define	elf_symloadx	elf64_symloadx
