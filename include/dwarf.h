@@ -25,11 +25,11 @@
 /* elf section nams */
 #define	DWARF_ABBREV	".debug_abbrev"
 #define	DWARF_ARANGES	".debug_aranges"
-#define	DWARF_FRAMES	".debug_frame"
+#define	DWARF_FRAME	".debug_frame"
 #define	DWARF_INFO	".debug_info"
-#define	DWARF_LINES	".debug_line"
+#define	DWARF_LINE	".debug_line"
 #define	DWARF_LOC	".debug_loc"
-#define	DWARF_MACROS	".debug_macinfo"
+#define	DWARF_MACINFO	".debug_macinfo"
 #define	DWARF_PUBNAMES	".debug_pubnames"
 #define	DWARF_STR	".debug_str"
 
@@ -81,7 +81,24 @@
 #define	DW_TAG_variant_part		0x33
 #define	DW_TAG_variable			0x34
 #define	DW_TAG_volatile_type		0x35
+#define	DW_TAG_dwarf_procedure		0x36
+#define	DW_TAG_restrict_type		0x37
+#define	DW_TAG_interface_type		0x38
+#define	DW_TAG_namespace		0x39
+#define	DW_TAG_imported_module		0x3a
+#define	DW_TAG_unspecified_type		0x3b
+#define	DW_TAG_partial_unit		0x3c
+#define	DW_TAG_imported_unit		0x3d
+#define	DW_TAG_condition		0x3e
+#define	DW_TAG_shared_type		0x3f
 #define	DW_TAG_lo_user			0x4080
+#define	DW_TAG_MIPS_loop		0x4081
+#define	DW_TAG_HP_array_descriptor	0x4090
+#define	DW_TAG_GNU_format_label		0x4101
+#define	DW_TAG_GNU_function_template	0x4102
+#define	DW_TAG_GNU_class_template	0x4103
+#define	DW_TAG_GNU_BINCL		0x4104
+#define	DW_TAG_GNU_EINCL		0x4105
 #define	DW_TAG_hi_user			0xffff
 
 #define	DW_CHILDREN_no		0
@@ -146,7 +163,27 @@
 #define	DW_AT_variable_parameter	0x4b
 #define	DW_AT_virtuality		0x4c
 #define	DW_AT_vtable_elem_location	0x4d
-#define	DW_AT_lo_user			0x2000 
+#define	DW_AT_lo_user			0x2000
+#define	DW_AT_MIPS_fde			0x2001
+#define	DW_AT_MIPS_loop_begin		0x2002
+#define	DW_AT_MIPS_tail_loop_begin	0x2003
+#define	DW_AT_MIPS_epilog_begin		0x2004
+#define	DW_AT_MIPS_loop_unroll_factor	0x2005
+#define	DW_AT_MIPS_software_pipeline_depth	0x2006
+#define	DW_AT_MIPS_linkage_name		0x2007
+#define	DW_AT_MIPS_stride		0x2008
+#define	DW_AT_MIPS_abstract_name	0x2009
+#define	DW_AT_MIPS_clone_origin		0x200a
+#define	DW_AT_MIPS_has_inlines		0x200b
+#define	DW_AT_HP_block_index		0x2000
+#define	DW_AT_GNU_sf_names		0x2101
+#define	DW_AT_GNU_src_info		0x2102
+#define	DW_AT_GNU_mac_info		0x2103
+#define	DW_AT_GNU_src_coords		0x2104
+#define	DW_AT_GNU_body_begin		0x2105
+#define	DW_AT_GNU_body_end		0x2106
+#define	DW_AT_GNU_vector		0x2107
+
 #define	DW_AT_hi_user			0x3fff
 
 #define	DW_FORM_addr		0x01
@@ -316,7 +353,15 @@
 #define	DW_OP_deref_size	0x94
 #define	DW_OP_xderef_size	0x95
 #define	DW_OP_nop		0x96
+#define	DW_OP_push_object_address 0x97
+#define	DW_OP_call2		0x98
+#define	DW_OP_call4		0x99
+#define	DW_OP_call_ref		0x9a
+#define	DW_OP_form_tls_address	0x9b
+#define	DW_OP_call_frame_cfa	0x9c
+#define	DW_OP_bit_piece		0x9d
 #define	DW_OP_lo_user		0xe0
+#define	DW_OP_GNU_push_tls_address 0xe0
 #define	DW_OP_hi_user		0xff
 
 #define	DW_ATE_address		0x1
@@ -327,7 +372,21 @@
 #define	DW_ATE_signed_char	0x6
 #define	DW_ATE_unsigned		0x7
 #define	DW_ATE_unsigned_char	0x8
+#define	DW_ATE_imaginary_float	0x9
+#define	DW_ATE_packed_decimal	0xa
+#define	DW_ATE_numeric_string	0xb
+#define	DW_ATE_edited		0xc
+#define	DW_ATE_signed_fixed	0xd
+#define	DW_ATE_unsigned_fixed	0xe
+#define	DW_ATE_decimal_float	0xf
 #define	DW_ATE_lo_user		0x80
+#define	DW_ATE_HP_float80	0x80
+#define	DW_ATE_HP_complex_float80 0x81
+#define	DW_ATE_HP_float128	0x82
+#define	DW_ATE_HP_complex_float128 0x83
+#define	DW_ATE_HP_floathpintel	0x84
+#define	DW_ATE_HP_imaginary_float80 0x85
+#define	DW_ATE_HP_imaginary_float128 0x85
 #define	DW_ATE_hi_user		0xff
 
 #define	DW_ACCESS_public	1
@@ -352,7 +411,17 @@
 #define	DW_LANG_Fortran90	0x0008
 #define	DW_LANG_Pascal83	0x0009
 #define	DW_LANG_Modula2		0x000a
+#define	DW_LANG_Java		0x000b
+#define	DW_LANG_C99		0x000c
+#define	DW_LANG_Ada95		0x000d
+#define	DW_LANG_Fortran95	0x000e
+#define	DW_LANG_PLI		0x000f
+#define	DW_LANG_ObjC		0x0010
+#define	DW_LANG_ObjC_plus_plus	0x0011
+#define	DW_LANG_UPC		0x0012
+#define	DW_LANG_D		0x0013
 #define	DW_LANG_lo_user		0x8000
+#define	DW_LANG_MIPS_Asm	0x8001
 #define	DW_LANG_hi_user		0xffff
 
 #define	DW_ID_case_sensitive	0
@@ -386,10 +455,14 @@
 #define	DW_LNS_set_basic_block	7
 #define	DW_LNS_const_add_pc	8
 #define	DW_LNS_fixed_advance_pc	9
+#define	DW_LNS_set_prologue_end	10
+#define	DW_LNS_set_epilogue_begin 11
+#define	DW_LNS_set_is		12
 
 #define	DW_LNE_end_sequence	1
 #define	DW_LNE_set_address	2
 #define	DW_LNE_define_file	3
+#define	DW_LNE_set_discriminator 4
 
 #define	DW_MACINFO_define	1
 #define	DW_MACINFO_undef	2
@@ -412,7 +485,19 @@
 #define	DW_CFA_def_cfa		0x0c
 #define	DW_CFA_def_cfa_register	0x0d
 #define	DW_CFA_def_cfa_offset	0x0e
+#define	DW_CFA_def_cfa_expression 0x0f
+#define	DW_CFA_expression	0x10
+#define	DW_CFA_offset_extended_sf 0x11
+#define	DW_CFA_def_cfa_sf	0x12
+#define	DW_CFA_def_cfa_offset_sf 0x13
+#define	DW_CFA_val_offset	0x14
+#define	DW_CFA_val_offset_sf	0x15
+#define	DW_CFA_val_expression	0x16
 #define	DW_CFA_lo_user		0x1c
+#define	DW_CFA_MIPS_advance_loc8 0x1d
+#define	DW_CFA_GNU_window_save	0x2d
+#define	DW_CFA_GNU_args_size	0x2e
+#define	DW_CFA_GNU_negative_offset_extended 0x2f
 #define	DW_CFA_hi_user		0x3f
 #define	DW_CFA_advance_loc	0x40
 #define	DW_CFA_offset		0x80
