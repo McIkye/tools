@@ -43,17 +43,33 @@ struct elf_symtab {
 #define	ELF_DWARF_NAMES	0x04
 #define	ELF_DWARF_TYPES	0x08
 
+struct dwarf_line {
+	uint64_t addr;		/* start address for */
+	uint64_t len;		/* length of the compilation unit */
+	const uint8_t *lnp;	/* line number program */
+};
+
 struct dwarf_nebula {
 	const char *name;	/* objname */
+	const uint8_t *unit;	/* current compilation unit in iterators */
+	int is64;		/* DWARF size 4/8 */
+	int a64;		/* address length 4/8 */
 
-	void	*info;		/* .debug_info */
-	size_t	ninfo;		/* size of the debugging info */
-	void	*lines;		/* .debug_lines */
-	size_t	nlines;		/* size of the line numbers info */
-	void	*addrs;		/* .debug_aranges */
-	size_t	naddrs;		/* size of the addr ranges info */
-	void	*names;		/* .debug_pubnames */
-	size_t	nnames;		/* size of the pub names info */
+	const void *abbrv;	/* .debug_addrev */
+	ssize_t	nabbrv;		/* size of the abbreviations section */
+	const void *info;	/* .debug_info */
+	ssize_t	ninfo;		/* size of the debugging info */
+	ssize_t	nunits;		/* number of compile units in the info */
+
+	const void *lines;	/* .debug_lines */
+	ssize_t	nlines;		/* size of the line numbers info */
+	struct dwarf_line *a2l;	/* addr-sorted array of line infos */
+
+	const void *names;	/* .debug_pubnames */
+	ssize_t	nnames;		/* size of the pub names info */
+
+	const void *str;	/* .debug_str */
+	ssize_t	nstr;		/* size of the strings info */
 
 	/* misc */
 	unsigned char elfdata;	/* cached EI_DATA */
@@ -121,6 +137,16 @@ struct dwarf_nebula *
 	elf32_dwarfnebula(const char*, FILE *, off_t, const Elf32_Ehdr*, int);
 struct dwarf_nebula *
 	elf64_dwarfnebula(const char*, FILE *, off_t, const Elf64_Ehdr*, int);
+
+int dwarf_ilen(struct dwarf_nebula*,const uint8_t**,ssize_t*,uint64_t*,int*);
+int	dwarf_leb128(uint64_t *, const uint8_t **, ssize_t *, int);
+
+ssize_t	dwarf_info_count(struct dwarf_nebula *);
+int	dwarf_info_scan(struct dwarf_nebula *,
+	    int (*)(struct dwarf_nebula *, const uint8_t *, ssize_t, void *,
+	    ssize_t), void *);
+int	dwarf_info_lines(struct dwarf_nebula *);
+
 int	dwarf_addr2line(uint64_t, struct dwarf_nebula *,
 	    const char **, const char **, int *);
 int	dwarf_addr2name(uint64_t, struct dwarf_nebula *, const char **, int *);

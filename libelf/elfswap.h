@@ -40,6 +40,7 @@
 #define	elf_scan_phdr	elf32_scan_phdr
 #define	elf_save_phdrs	elf32_save_phdrs
 #define	elf_fix_phdrs	elf32_fix_phdrs
+#define	elf_fix_phdr	elf32_fix_phdr
 #define	elf_load_shdrs	elf32_load_shdrs
 #define	elf_save_shdrs	elf32_save_shdrs
 #define	elf_scan_shdrs	elf32_scan_shdrs
@@ -86,6 +87,7 @@
 #define	elf_scan_phdr	elf64_scan_phdr
 #define	elf_save_phdrs	elf64_save_phdrs
 #define	elf_fix_phdrs	elf64_fix_phdrs
+#define	elf_fix_phdr	elf64_fix_phdr
 #define	elf_load_shdrs	elf64_load_shdrs
 #define	elf_save_shdrs	elf64_save_shdrs
 #define	elf_scan_shdrs	elf64_scan_shdrs
@@ -112,3 +114,6 @@
 #error "Unsupported ELF class"
 #endif
 
+uint16_t dwarf_fix16(struct dwarf_nebula *, uint16_t);
+uint32_t dwarf_fix32(struct dwarf_nebula *, uint32_t);
+uint64_t dwarf_fix64(struct dwarf_nebula *, uint64_t);

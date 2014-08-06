@@ -1,8 +1,9 @@
 
 LIB=	elf
-SRCS=	checkoff.c
+SRCS=	checkoff.c dwarf_bytes.c dwarf_info.c dwarf_line.c
 SRCS2=	elf_header.c elf_phdrs.c elf_shdrs.c elf_rel.c \
-	elf_symload.c elf_sym.c elf_note.c elf_size.c
+	elf_symload.c elf_sym.c elf_note.c elf_size.c \
+	elf_dwarfnebula.c
 CPPFLAGS+=-I${.CURDIR}
 CFLAGS+=-Wall
 MAN=	elf_size.3
@@ -19,13 +20,13 @@ MLINKS=	elf_size.3 elf_fix_header.3 elf_size.3 elf_chk_header.3 \
 SRCS+=${F:S/elf_/elf32_/}
 CLEANFILES+=${F:S/elf_/elf32_/}
 ${F:S/elf_/elf32_/}: ${.CURDIR}/$F
-	printf '#define ELFSIZE 32\n#line 1 \"s\"\n' $F | \
+	printf '#define ELFSIZE 32\n#line 1 \"%s\"\n' $> | \
 	    cat - $> > ${.TARGET}
 
 SRCS+=${F:S/elf_/elf64_/}
 CLEANFILES+=${F:S/elf_/elf64_/}
 ${F:S/elf_/elf64_/}: ${.CURDIR}/$F
-	printf '#define ELFSIZE 64\n#line 1 \"s\"\n' $F | \
+	printf '#define ELFSIZE 64\n#line 1 \"%s\"\n' $> | \
 	    cat - $> > ${.TARGET}
 .endfor
 
