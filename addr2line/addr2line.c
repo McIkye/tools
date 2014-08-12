@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: addr2line.c,v 1.4 2014/08/08 16:39:12 mickey Exp $";
+    "$ABSD: addr2line.c,v 1.5 2014/08/12 11:42:19 mickey Exp $";
 #endif
 
 #include <sys/param.h>
@@ -48,9 +48,9 @@ static const char rcsid[] =
 #define	A2LBASENAME	2
 
 void usage(void);
-int addr2line(const char *, FILE *, long long, const char **, const char **,
-    const char **, int *);
-void a2lprintf(const char *, const char *, const char *, int, int);
+int addr2line(const char *, FILE *, uint64_t, const char **, const char **,
+    int *, const char **, uint64_t *);
+void a2lprintf(const char *, const char *, uint64_t, const char *, int, int);
 
 /* a funky nlist overload for reading 32bit a.out on 64bit toys */
 /* stolen from nm.c */
@@ -66,11 +66,10 @@ int
 main(int argc, char *argv[])
 {
 	extern int optind;
-	const char *fn;
 	FILE *fp;
 	char *ep;
-	const char *dir, *fname, *funame;
-	long long ptr;
+	const char *dir, *fn, *fun;
+	uint64_t a;
 	int ch, flags, ln;
 
 	fn = "a.out";
@@ -101,35 +100,39 @@ main(int argc, char *argv[])
 	if (*argv)
 		for (; *argv; argv++) {
 			errno = 0;
-			ptr = strtoull(*argv, &ep, 0);
+			a = strtoull(*argv, &ep, 0);
 			if (*argv[0] == '\0' || *ep != '\0')
 				errx(1, "\'%s\' is ain't no number", *argv);
-			if (errno == ERANGE && ptr == ULLONG_MAX)
+			if (errno == ERANGE && a == ULLONG_MAX)
 				errx(1, "\'%s\' address's out of there", *argv);
 
-			if (!addr2line(fn, fp, ptr, &dir, &fname, &funame, &ln))
-				a2lprintf(dir, fname, funame, ln, flags);
+			if (!addr2line(fn, fp, a, &dir, &fn, &ln, &fun, &a))
+				a2lprintf(dir, fn, a, fun, ln, flags);
 		}
 	else
-		while (scanf("%lld", &ptr) != EOF)
-			if (!addr2line(fn, fp, ptr, &dir, &fname, &funame, &ln))
-				a2lprintf(dir, fname, funame, ln, flags);
+		while (scanf("%lld", &a) != EOF)
+			if (!addr2line(fn, fp, a, &dir, &fn, &ln, &fun, &a))
+				a2lprintf(dir, fn, a, fun, ln, flags);
 
 	return 0;
 }
 
 void
-a2lprintf(const char *dir, const char *fname, const char *funame, int ln, int flags)
+a2lprintf(const char *dir, const char *fname, uint64_t a, const char *funame,
+    int ln, int flags)
 {
 	if (!(flags & A2LBASENAME))
 		printf("%s/", dir);
 
-	printf("%s:", fname);
+	printf("%s:%d", fname, ln);
 
-	if (flags & A2LFUNAME)
-		printf("%s:", funame);
+	if (flags & A2LFUNAME) {
+		printf(":%s", funame);
+		if (a)
+			printf("()+0x%llx", a);
+	}
 
-	printf("%d\n", ln);
+	putchar('\n');
 }
 
 void
@@ -142,8 +145,8 @@ usage(void)
 }
 
 int
-addr2line(const char *name, FILE *fp, long long addr, const char **pdir,
-    const char **pfn, const char **pfun, int *pln)
+addr2line(const char *name, FILE *fp, uint64_t addr, const char **pdir,
+    const char **pfn, int *pln, const char **pfun, uint64_t *aoff)
 {
 	union hdr {
 		struct exec aout;
@@ -172,7 +175,8 @@ addr2line(const char *name, FILE *fp, long long addr, const char **pdir,
 		    ELF_DWARF_LINES | ELF_DWARF_NAMES)))
 			return 1;
 
-		rv = dwarf_addr2line(addr, dn, pdir, pfn, pln);
+		if (!(rv = dwarf_addr2line(addr, dn, pdir, pfn, pln)))
+			rv = dwarf_addr2name(addr, dn, pfun, aoff);
 
 	} else if (IS_ELF(head.elf64) &&
 	    head.elf64.e_ident[EI_CLASS] == ELFCLASS64) {
@@ -185,7 +189,8 @@ addr2line(const char *name, FILE *fp, long long addr, const char **pdir,
 		    ELF_DWARF_LINES | ELF_DWARF_NAMES)))
 			return 1;
 
-		rv = dwarf_addr2line(addr, dn, pdir, pfn, pln);
+		if (!(rv = dwarf_addr2line(addr, dn, pdir, pfn, pln)))
+			rv = dwarf_addr2name(addr, dn, pfun, aoff);
 
 	} else if (BAD_OBJECT(head.aout)) {
 		warnx("%s: bad format", name);
