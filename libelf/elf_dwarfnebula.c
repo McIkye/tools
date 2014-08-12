@@ -16,7 +16,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "$ABSD: elf_dwarfnebula.c,v 1.1 2014/08/08 16:36:09 mickey Exp $";
+    "$ABSD: elf_dwarfnebula.c,v 1.2 2014/08/12 11:39:49 mickey Exp $";
 #endif /* not lint */
 
 #include <stdio.h>
@@ -128,7 +128,10 @@ elf_dwarfnebula(const char *name, FILE *fp, off_t foff, const Elf_Ehdr *eh,
 	}
 
 	free(shstr);
+	shstr = NULL;
 	free(shdr);
+	shdr = NULL;
+
 	dn->names = names;
 	dn->lines = lines;
 	dn->str = str;
@@ -136,12 +139,15 @@ elf_dwarfnebula(const char *name, FILE *fp, off_t foff, const Elf_Ehdr *eh,
 	dn->info = info;
 	if ((dn->nunits = dwarf_info_count(dn)) > 0) {
 	    	if (flags & ELF_DWARF_LINES) {
-			if (!dwarf_info_lines(dn))
+			if (dwarf_info_lines(dn))
+				goto kaput;
+		}
+	    	if (flags & ELF_DWARF_NAMES) {
+			if (!dwarf_names_index(dn))
 				return dn;
 		} else
 			return dn;
 	}
-	if (flags & ELF_DWARF_LINES)
  kaput:
 	free(shstr);
 	free(shdr);

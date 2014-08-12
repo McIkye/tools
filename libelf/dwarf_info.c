@@ -14,6 +14,11 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#ifndef lint
+static const char rcsid[] =
+    "$ABSD: dwarf_info.c,v 1.2 2014/08/12 11:39:49 mickey Exp $";
+#endif /* not lint */
+
 #include <sys/types.h>
 #include <err.h>
 #include <stdint.h>
@@ -204,7 +209,7 @@ dwarf_attr(struct dwarf_nebula *dn, const uint8_t **cu, ssize_t *len,
 
 int
 dwarf_scan_count(struct dwarf_nebula *dn, const uint8_t *cu, ssize_t len,
-    void *v, ssize_t ioff)
+    void *v, ssize_t aoff)
 {
 /* TODO skip NULL units (alignment stubs) */
 	(*(ssize_t *)v)++;
@@ -216,20 +221,61 @@ dwarf_info_count(struct dwarf_nebula *dn)
 {
 	ssize_t n = 0;
 
-	if (dwarf_info_scan(dn, dwarf_scan_count, &n))
+	if (dwarf_info_scan(dn, dwarf_scan_count, &n) < 0)
 		return -1;
 
 	return n;
 }
 
 int
-dwarf_scan_lines(struct dwarf_nebula *dn, const uint8_t *cu, ssize_t len,
-    void *v, ssize_t ioff)
+dwarf_abbrv_find(struct dwarf_nebula *dn, const uint8_t **ab, ssize_t *lab, int idx)
 {
-	struct dwarf_line *ln;
-	const uint8_t *ab = (const uint8_t *)dn->abbrv + ioff;
+	uint64_t at, u64;
+
+	for (;;) {
+		if (dwarf_leb128(&at, ab, lab, 0)) {
+	trunc:
+			warnx("%s: truncated " DWARF_ABBREV, dn->name);
+			return -1;
+		}
+
+// fprintf(stderr, "idx %lld\n", at);
+		if (at == idx)
+			return 0;
+
+		/* tag */
+		if (dwarf_leb128(&at, ab, lab, 0))
+			goto trunc;
+
+		(*ab)++;
+		(*lab)--;
+
+		for (;;) {
+			if (dwarf_leb128(&at, ab, lab, 0))
+				goto trunc;
+// fprintf(stderr, "at 0x%llx\n", at);
+	
+			if (dwarf_leb128(&u64, ab, lab, 0))
+				goto trunc;
+// fprintf(stderr, "form 0x%llx\n", u64);
+
+			/* end of record */
+			if (!at || !u64)
+				break;
+		}
+	}
+
+	return -1;
+}
+
+int
+dwarf_scan_lines(struct dwarf_nebula *dn, const uint8_t *cu, ssize_t len,
+    void *v, ssize_t aoff)
+{
 	uint64_t at, u64, high, low;
-	ssize_t rlen, soff, lab = dn->nabbrv;
+	struct dwarf_line *ln;
+	const uint8_t *ab = (const uint8_t *)dn->abbrv + aoff;
+	ssize_t rlen, soff, lab = dn->nabbrv - aoff;
 
 	if (dwarf_leb128(&u64, &cu, &len, 0)) {
 		warnx("%s: truncated " DWARF_INFO, dn->name);
@@ -241,14 +287,8 @@ dwarf_scan_lines(struct dwarf_nebula *dn, const uint8_t *cu, ssize_t len,
 	if (u64 == 0)
 		return 1;
 
-	/* XXX assume here what we want is the first entry */
-	if (dwarf_leb128(&at, &ab, &lab, 0)) {
-		warnx("%s: truncated " DWARF_ABBREV, dn->name);
-		return 0;
-	}
-
-	if (u64 != at) {
-		warnx("abbyrvalg");
+	if (dwarf_abbrv_find(dn, &ab, &lab, u64)) {
+		warnx("%s: corrupt " DWARF_INFO, dn->name);
 		return 0;
 	}
 
@@ -332,12 +372,12 @@ dwarf_scan_lines(struct dwarf_nebula *dn, const uint8_t *cu, ssize_t len,
 		return 0;
 	}
 
-	ln = &dn->a2l[*(int *)v];
-	if (*(int *)v >= dn->nunits) {
+	ln = &dn->a2l[*(ssize_t *)v];
+	if (*(ssize_t *)v >= dn->nunits) {
 		warnx("%s: inconsistant unit number", dn->name);
 		return 0;
 	}
-	*(int *)v += 1;	/* this seems to be a ++/cast bug in gcc */
+	*(ssize_t *)v += 1;	/* this seems to be a ++/cast bug in gcc */
 
 	ln->addr = low;
 	ln->len = high - low + 1;
@@ -362,7 +402,7 @@ dwarf_line_cmp(const void *v1, const void *v2)
 int
 dwarf_info_lines(struct dwarf_nebula *dn)
 {
-	int i;
+	ssize_t i;
 
 	if (!dn->info || !dn->nunits) {
 		warnx("%s: " DWARF_INFO " not loaded", dn->name);
@@ -380,7 +420,7 @@ dwarf_info_lines(struct dwarf_nebula *dn)
 	}
 
 	i = 0;
-	if (dwarf_info_scan(dn, dwarf_scan_lines, &i)) {
+	if (dwarf_info_scan(dn, dwarf_scan_lines, &i) < 0) {
 		free(dn->a2l);
 		dn->a2l = NULL;
 		return -1;
@@ -393,71 +433,75 @@ dwarf_info_lines(struct dwarf_nebula *dn)
 }
 
 int
+dwarf_info_abbrv(struct dwarf_nebula *dn, const uint8_t **cu, ssize_t *len,
+    ssize_t *rlen, ssize_t *aoff)
+{
+	uint64_t a64;
+	uint16_t a16;
+	int ver;
+
+	if (dwarf_ilen(dn, cu, len, &a64, &dn->is64) || a64 > *len) {
+		warnx("%s: corrupt " DWARF_INFO, dn->name);
+		return -1;
+	}
+// fprintf(stderr, "il %lld/%zd\n", a64, *len);
+	*rlen = a64;
+	*len -= *rlen;
+
+	if (*rlen < 3 + dn->is64) {
+		warnx("%s: truncated " DWARF_INFO, dn->name);
+		return -1;
+	}
+
+	memcpy(&a16, *cu, sizeof a16);
+	if ((ver = dwarf_fix16(dn, a16)) != 2) {
+		warnx("%s: unsupported DWARF version %d", dn->name, ver);
+		return -1;
+	}
+	*cu += 2;
+	*rlen -= 2;
+
+	*aoff = dwarf_off48(dn, cu);
+	*rlen -= dn->is64;
+
+// fprintf(stderr, "aoff %zu\n", *aoff);
+	if (*aoff >= dn->nabbrv) {
+		warnx("%s: corrupt " DWARF_INFO, dn->name);
+		return -1;
+	}
+
+	dn->a64 = *(*cu)++;
+	if (dn->a64 != 4 && dn->a64 != 8) {
+		warnx("%s: invalid address len %d", dn->name, dn->a64);
+		return -1;
+	}
+	(*rlen)--;
+
+	return 0;
+}
+
+int
 dwarf_info_scan(struct dwarf_nebula *dn,
     int (*fn)(struct dwarf_nebula *, const uint8_t *, ssize_t, void *,
     ssize_t), void *v)
 {
-	uint64_t a64, rlen;
-	const uint8_t *p, *ep, *er;
-	ssize_t ioff, len;
-	uint32_t a32;
-	uint16_t a16;
-	int ver, is64;
+	const uint8_t *p;
+	ssize_t rlen, aoff, len;
+	int rv;
 
 	if (!dn->info) {
 		warnx("%s: " DWARF_INFO " not loaded", dn->name);
-		return 1;
+		return -1;
 	}
 
-	for (p = dn->info, ep = p + dn->ninfo; p < ep ; p = er) {
-		len = ep - p;
-		if (dwarf_ilen(dn, &p, &len, &rlen, &is64) || rlen > ep - p) {
-			warnx("%s: corrupt " DWARF_INFO, dn->name);
-			return 1;
-		}
-		er = p + rlen;
-
-// fprintf(stderr, "il %lld\n", rlen);
-		if (er - p < 3 + is64) {
-			warnx("%s: truncated " DWARF_INFO, dn->name);
-			return 1;
-		}
-
-		memcpy(&a16, p, sizeof a16);
-		if ((ver = dwarf_fix16(dn, a16)) != 2) {
-			warnx("%s: unsupported DWARF version %d", dn->name, ver);
-			return 1;
-		}
-		p += 2;
-
-		if (is64 == 4) {
-			memcpy(&a32, p, sizeof a32);
-			a32 = dwarf_fix32(dn, a32);
-			a64 = 0;
-		} else {
-			memcpy(&a64, p, sizeof a64);
-			a64 = dwarf_fix64(dn, a64);
-			a32 = 0;
-		}
-		p += is64;
-
-		if (a32 >= dn->nabbrv || a64 >= dn->nabbrv) {
-			warnx("%s: corrupt " DWARF_INFO, dn->name);
-			return 1;
-		}
-		ioff = (ssize_t)(a32 + a64);
-
-		dn->is64 = is64;
-		dn->a64 = *p++;
-		if (dn->a64 != 4 && dn->a64 != 8) {
-			warnx("%s: invalid address len %d", dn->name, dn->a64);
-			return 1;
-		}
+	for (p = dn->info, len = dn->ninfo; len > 0; p += rlen) {
+		if (dwarf_info_abbrv(dn, &p, &len, &rlen, &aoff))
+			return -1;
 
 		dn->unit = p;
-		if (!(*fn)(dn, p, er - p, v, ioff))
-			return 1;
+		if ((rv = (*fn)(dn, p, rlen, v, aoff)) <= 0)
+			return rv;
 	}
 
-	return 0;
+	return 1;
 }

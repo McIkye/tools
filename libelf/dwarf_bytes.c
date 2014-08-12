@@ -14,6 +14,11 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#ifndef lint
+static const char rcsid[] =
+    "$ABSD: dwarf_bytes.c,v 1.2 2014/08/12 11:39:49 mickey Exp $";
+#endif /* not lint */
+
 #include <sys/types.h>
 #include <err.h>
 #include <stdint.h>
@@ -49,6 +54,24 @@ dwarf_fix64(struct dwarf_nebula *dn, uint64_t a64)
 		return a64;
 
 	return swap64(a64);
+}
+
+uint64_t
+dwarf_off48(struct dwarf_nebula *dn, const uint8_t **p)
+{
+	if (dn->is64 == 4) {
+		uint32_t a32;
+
+		memcpy(&a32, *p, sizeof a32);
+		*p += 4;
+		return dwarf_fix32(dn, a32);
+	} else {
+		uint64_t a64;
+
+		memcpy(&a64, *p, sizeof a64);
+		*p += 8;
+		return dwarf_fix64(dn, a64);
+	}
 }
 
 int

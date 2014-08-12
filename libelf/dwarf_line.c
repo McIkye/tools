@@ -14,6 +14,11 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#ifndef lint
+static const char rcsid[] =
+    "$ABSD: dwarf_line.c,v 1.2 2014/08/12 11:39:49 mickey Exp $";
+#endif /* not lint */
+
 #include <sys/types.h>
 #include <err.h>
 #include <stdint.h>
@@ -207,8 +212,10 @@ dwarf_addr2line(uint64_t pc, struct dwarf_nebula *dn,
 
 	ln = dn->a2l;
 	k.addr = pc;
-	if (!(ln = bsearch(&k, ln, dn->nunits, sizeof *ln, dwarf_line_canhas)))
+	if (!(ln = bsearch(&k, ln, dn->nunits, sizeof *ln, dwarf_line_canhas))){
+		warnx("%s: 0x%llx has no matching line", dn->name, pc);
 		return -1;
+	}
 
 // fprintf(stderr, "pc %llx addr %llx %llx\n", pc, ln->addr, ln->len);
 	return dwarf_a2l_unit(pc, dn, ln, pdir, pfname, pln);

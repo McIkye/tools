@@ -37,7 +37,7 @@ struct elf_symtab {
 	u_long	nsyms;		/* number of symbols in the table */
 };
 
-/* flags for elf_dwarfnebulas */
+/* flags for elf_dwarfnebula */
 #define	ELF_DWARF_ADDRS	0x01
 #define	ELF_DWARF_LINES	0x02
 #define	ELF_DWARF_NAMES	0x04
@@ -45,8 +45,15 @@ struct elf_symtab {
 
 struct dwarf_line {
 	uint64_t addr;		/* start address for */
-	uint64_t len;		/* length of the compilation unit */
+	ssize_t len;		/* length of the compilation unit */
 	const uint8_t *lnp;	/* line number program */
+};
+
+struct dwarf_name {
+	uint64_t addr;		/* always store in 64bits as we do not know */
+	ssize_t len;		/* length of the object */
+	const char *name;	/* symbol name */
+	const char *unit;	/* ptr into corresponding compile unit */
 };
 
 struct dwarf_nebula {
@@ -55,20 +62,24 @@ struct dwarf_nebula {
 	int is64;		/* DWARF size 4/8 */
 	int a64;		/* address length 4/8 */
 
-	const void *abbrv;	/* .debug_addrev */
+	const uint8_t *abbrv;	/* .debug_addrev */
 	ssize_t	nabbrv;		/* size of the abbreviations section */
-	const void *info;	/* .debug_info */
+	const uint8_t *info;	/* .debug_info */
 	ssize_t	ninfo;		/* size of the debugging info */
 	ssize_t	nunits;		/* number of compile units in the info */
 
-	const void *lines;	/* .debug_lines */
+	const uint8_t *lines;	/* .debug_lines */
 	ssize_t	nlines;		/* size of the line numbers info */
 	struct dwarf_line *a2l;	/* addr-sorted array of line infos */
+/* TODO create a file:line indexed list */
 
-	const void *names;	/* .debug_pubnames */
+	const uint8_t *names;	/* .debug_pubnames */
 	ssize_t	nnames;		/* size of the pub names info */
+	struct dwarf_name *a2n;	/* address-sorted list */
+	struct dwarf_name *n2a;	/* name-sorted list */
+	ssize_t ncount;		/* number of entries in the index */
 
-	const void *str;	/* .debug_str */
+	const uint8_t *str;	/* .debug_str */
 	ssize_t	nstr;		/* size of the strings info */
 
 	/* misc */
@@ -138,17 +149,30 @@ struct dwarf_nebula *
 struct dwarf_nebula *
 	elf64_dwarfnebula(const char*, FILE *, off_t, const Elf64_Ehdr*, int);
 
+uint64_t dwarf_off48(struct dwarf_nebula *, const uint8_t **);
 int dwarf_ilen(struct dwarf_nebula*,const uint8_t**,ssize_t*,uint64_t*,int*);
 int	dwarf_leb128(uint64_t *, const uint8_t **, ssize_t *, int);
 
 ssize_t	dwarf_info_count(struct dwarf_nebula *);
+int	dwarf_info_abbrv(struct dwarf_nebula *, const uint8_t **, ssize_t *,
+	    ssize_t *, ssize_t *);
 int	dwarf_info_scan(struct dwarf_nebula *,
 	    int (*)(struct dwarf_nebula *, const uint8_t *, ssize_t, void *,
 	    ssize_t), void *);
 int	dwarf_info_lines(struct dwarf_nebula *);
 
+int	dwarf_abbrv_find(struct dwarf_nebula*, const uint8_t**, ssize_t*,int);
+int	dwarf_attr(struct dwarf_nebula *, const uint8_t **, ssize_t *,
+	    void *, ssize_t *, int);
+
+int	dwarf_names_scan(struct dwarf_nebula *,
+	    int (*fn)(struct dwarf_nebula *, const uint8_t *, ssize_t, ssize_t,
+	    void *), void *);
+
 int	dwarf_addr2line(uint64_t, struct dwarf_nebula *,
 	    const char **, const char **, int *);
-int	dwarf_addr2name(uint64_t, struct dwarf_nebula *, const char **, int *);
+int	dwarf_addr2name(uint64_t,struct dwarf_nebula*,const char**,uint64_t*);
+
+int	dwarf_names_index(struct dwarf_nebula *);
 
 #endif /* _LIBELF_H_ */
