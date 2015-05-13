@@ -1503,7 +1503,7 @@ printf("i %d j %d k %d\n", i, j, k);
 /*
 printf("ns %d -> %d\n", ns, nus[ns]);
 */
-			r->r_info = ELF_R_INFO(nus[ns], ELF_R_TYPE(r->r_info));
+			r->r_info = ELF_R_INFO((long)nus[ns], ELF_R_TYPE(r->r_info));
 		}
 	}
 
