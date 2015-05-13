@@ -38,12 +38,12 @@ symcmp(struct symlist *a, struct symlist *b)
 	return strcmp(a->sl_name, b->sl_name);
 }
 
-SPLAY_HEAD(symtree, symlist) undsyms = SPLAY_INITIALIZER(undsyms),
-    defsyms = SPLAY_INITIALIZER(defsyms);
+RB_HEAD(symtree, symlist) undsyms = RB_INITIALIZER(undsyms),
+    defsyms = RB_INITIALIZER(defsyms);
 
-SPLAY_PROTOTYPE(symtree, symlist, sl_node, symcmp);
+RB_PROTOTYPE(symtree, symlist, sl_node, symcmp);
 
-SPLAY_GENERATE(symtree, symlist, sl_node, symcmp);
+RB_GENERATE(symtree, symlist, sl_node, symcmp);
 
 /*
  * add and return a symbol as undefined
@@ -60,7 +60,7 @@ sym_undef(const char *name)
 	if (!(sym->sl_name = strdup(name)))
 		err(1, "strdup");
 
-	SPLAY_INSERT(symtree, &undsyms, sym);
+	RB_INSERT(symtree, &undsyms, sym);
 	return sym;
 }
 
@@ -74,7 +74,7 @@ sym_isundef(const char *name)
 
 	bzero(&key, sizeof key);
 	key.sl_name = name;
-	return SPLAY_FIND(symtree, &undsyms, &key);
+	return RB_FIND(symtree, &undsyms, &key);
 }
 
 /*
@@ -83,10 +83,10 @@ sym_isundef(const char *name)
 struct symlist *
 sym_define(struct symlist *sym, struct section *os, void *esym)
 {
-	SPLAY_REMOVE(symtree, &undsyms, sym);
+	RB_REMOVE(symtree, &undsyms, sym);
 	sym->sl_sect = os;
 	memcpy(&sym->sl_elfsym, esym, sizeof sym->sl_elfsym);
-	SPLAY_INSERT(symtree, &defsyms, sym);
+	RB_INSERT(symtree, &defsyms, sym);
 	/* ABS symbols have no section */
 	if (os)
 		TAILQ_INSERT_TAIL(&os->os_syms, sym, sl_entry);
@@ -125,7 +125,7 @@ sym_add(const char *name, struct section *os, void *esym)
 
 	sym->sl_sect = os;
 	memcpy(&sym->sl_elfsym, esym, sizeof sym->sl_elfsym);
-	SPLAY_INSERT(symtree, &defsyms, sym);
+	RB_INSERT(symtree, &defsyms, sym);
 	/* ABS symbols have no section */
 	if (os)
 		TAILQ_INSERT_TAIL(&os->os_syms, sym, sl_entry);
@@ -142,9 +142,9 @@ sym_isdefined(const char *name, struct section *os)
 
 	bzero(&key, sizeof key);
 	key.sl_name = name;
-	if (!(sym = SPLAY_FIND(symtree, &defsyms, &key)) && os) {
+	if (!(sym = RB_FIND(symtree, &defsyms, &key)) && os) {
 		key.sl_sect = os;
-		sym = SPLAY_FIND(symtree, &defsyms, &key);
+		sym = RB_FIND(symtree, &defsyms, &key);
 	}
 
 	return sym;
@@ -162,7 +162,7 @@ sym_remove(struct symlist *sym)
 
 	if (sym->sl_sect)
 		TAILQ_REMOVE(&sym->sl_sect->os_syms, sym, sl_entry);
-	SPLAY_REMOVE(symtree, &defsyms, sym);
+	RB_REMOVE(symtree, &defsyms, sym);
 	free((char *)sym->sl_name);	/* it was const */
 	/* only when cref is set */
 	while (!TAILQ_EMPTY(&sym->sl_xref)) {
@@ -182,7 +182,7 @@ sym_undcheck(void)
 	struct symlist *sym;
 	int err = 0;
 
-	SPLAY_FOREACH(sym, symtree, &undsyms) {
+	RB_FOREACH(sym, symtree, &undsyms) {
 		if (!sym->sl_name)
 			continue;
 		if (sym->sl_sect)
@@ -219,7 +219,7 @@ sym_printmap(struct headorder *headorder, ordprint_t of, symprint_t sf)
 		struct symlist *sym;
 
 		fputs("\nCross reference table:\n\n", mfp);
-		SPLAY_FOREACH(sym, symtree, &defsyms) {
+		RB_FOREACH(sym, symtree, &defsyms) {
 			struct xreflist *xl;
 			int first = 1;
 

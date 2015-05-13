@@ -71,7 +71,7 @@ typedef int (*symprint_t)(const struct ldorder *, const struct section *,
  */
 struct symlist {
 	TAILQ_HEAD(, xreflist) sl_xref;	/* xref list */
-	SPLAY_ENTRY(symlist) sl_node;	/* global symbol table */
+	RB_ENTRY(symlist) sl_node;	/* global symbol table */
 	TAILQ_ENTRY(symlist) sl_entry;	/* list per section */
 	union {
 		Elf32_Sym sym32;
