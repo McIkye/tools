@@ -1026,10 +1026,10 @@ if (is && *name == '\0') {
 	}
 
 	laname = NULL;
+	sym = sym_isdefined(name, ol->ol_sections);
 	switch (esym->st_shndx) {
 	case SHN_UNDEF:
-		if (!(sym = sym_isdefined(name, sysobj.ol_sections)) &&
-		    !(sym = sym_isundef(name))) {
+		if (!sym && !(sym = sym_isundef(name))) {
 			/* weak undef is a weak abs with NULL addr */
 			if (ELF_ST_BIND(esym->st_info) == STB_WEAK)
 				sym = elf_absadd(name, STB_WEAK);
@@ -1041,7 +1041,7 @@ if (is && *name == '\0') {
 		break;
 
 	case SHN_COMMON:
-		if ((sym = sym_isdefined(name, ol->ol_sections))) {
+		if (sym) {
 			Elf_Sym *dsym = &ELF_SYM(sym->sl_elfsym);
 
 			if (warncomm)
@@ -1064,7 +1064,7 @@ if (is && *name == '\0') {
 				err(1, "asprintf");
 /* XXX leaking */
 		}
-		if ((sym = sym_isdefined(name, ol->ol_sections)))
+		if (sym)
 			warnx("%s: %s: already defined in %s",
 			    ol->ol_path, name,
 			    sym->sl_sect->os_obj->ol_path);
@@ -1079,7 +1079,7 @@ if (is && *name == '\0') {
 			err(1, "%s: invalid section index for #%d",
 			    es->name, is);
 		os = ol->ol_sections + esym->st_shndx;
-		if ((sym = sym_isdefined(name, ol->ol_sections))) {
+		if (sym) {
 			if (ELF_ST_BIND(esym->st_info) == STB_LOCAL) {
 				laname = NULL;
 				do {
