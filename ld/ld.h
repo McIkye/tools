@@ -214,6 +214,7 @@ struct ldorder {
 
 extern struct objlist sysobj;
 extern const char *entry_name;
+extern const char *trace_names[];
 extern char *mapfile;
 extern struct ldorder *bsorder;
 extern int Xflag, errors, printmap, cref, relocatable, strip, warncomm;

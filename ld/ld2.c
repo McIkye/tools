@@ -1015,6 +1015,16 @@ if (is && *name == '\0') {
 	warnx("#%d is null", is);
 }
 
+	if (trace_names[0]) {
+		const char **p;
+		for (p = trace_names; *p; p++)
+			if (!strcmp(*p, name)) {
+				printf(esym->st_shndx == SHN_UNDEF?
+				    "%s: reference to %s\n" :
+				    "%s: definition of %s\n", es->name, name);
+			}
+	}
+
 	laname = NULL;
 	switch (esym->st_shndx) {
 	case SHN_UNDEF:

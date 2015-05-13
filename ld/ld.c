@@ -75,6 +75,9 @@ u_int64_t start_text, start_data, start_bss;
 char *mapfile;
 const char *entry_name;
 struct symlist *sentry;
+#define	NTRACE	10
+const char *trace_names[NTRACE + 1];	/* plus NULL terminator */
+int trace_num = NTRACE;
 
 #define OPTSTRING "+A:B:c:C:d:D:e:Ef:F:gh:il:L:m:M:nNo:OqrR:sStT:u:vVxXy:Y:z:Z"
 const struct option longopts[] = {
@@ -347,6 +350,10 @@ main(int argc, char *argv[])
 			break;
 
 		case 'y':	/* trace all files for this symbol */
+			if (trace_num == 0)
+				warnx("too many -y options");
+			trace_names[NTRACE - trace_num] = optarg;
+			trace_num--;
 			break;
 
 		case 'z':	/* special options */
