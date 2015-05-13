@@ -148,6 +148,12 @@ struct objlist {
 	int ol_nsect;			/* number of sections */
 	int ol_flags;
 #define	OBJ_SYSTEM	0x0001
+
+	/* sparc v9 ABI */
+	struct symlist *ol_g2;
+	struct symlist *ol_g3;
+	struct symlist *ol_g6;
+	struct symlist *ol_g7;
 };
 
 /*

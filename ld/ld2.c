@@ -987,15 +987,35 @@ elf_symadd(struct elf_symtab *es, int is, void *vs, void *v)
 		return 0;
 	}
 
-	laname = NULL;
+	if (machine == EM_SPARCV9 &&
+	    ELF_ST_TYPE(esym->st_info) == STT_SPARC_REGISTER) {
+		struct symlist **pg;
+		switch (esym->st_value) {
+		case 2:	pg = &ol->ol_g2;	break;
+		case 3:	pg = &ol->ol_g3;	break;
+		case 6:	pg = &ol->ol_g6;	break;
+		case 7:	pg = &ol->ol_g7;	break;
+		default:
+			errx(1, "invalid register number %ld",
+			    (long)esym->st_value);
+		}
+		if (*pg)
+			errx(1, "#%d is duplicated %%g%d assignment",
+			    is, (int)esym->st_value);
+		if (*name == '\0')
+			*pg = (struct symlist *)-1L;
+		else {
+printf("appreg %d \"%s\"\n", (int)esym->st_value, name);
+/* TODO on the second pass check all objs have same g* assignments */
+		}
+		return 0;
+	}
+
 if (is && *name == '\0') {
-#define STT_GNU_SPARC_REGISTER STT_LOPROC
-	if (ELF_ST_TYPE(esym->st_info) == STT_GNU_SPARC_REGISTER)
-		errx(1, "rebuild %s with -mno-app-regs", ol->ol_name);
-	else
-		warnx("#%d is null", is);
+	warnx("#%d is null", is);
 }
 
+	laname = NULL;
 	switch (esym->st_shndx) {
 	case SHN_UNDEF:
 		if (!(sym = sym_isdefined(name, sysobj.ol_sections)) &&
